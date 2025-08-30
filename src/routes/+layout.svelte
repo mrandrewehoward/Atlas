@@ -90,8 +90,15 @@ onMount(() => {
 	return () => window.removeEventListener('keydown', keyHandler);
 });
 // Stubs for missing props/vars for layout to compile
-let spaces = $state([]);
-function getAbbreviation() { return ''; }
+let spaces = $state([
+	{ id: 1, name: 'Projects' },
+	{ id: 2, name: 'Tasks' },
+	{ id: 3, name: 'Notes' },
+	{ id: 4, name: 'Settings' }
+]);
+function getAbbreviation(name: string) {
+	return name.charAt(0).toUpperCase();
+}
 let sidebarSection = $state('');
 function handleLogin(e: Event) { e.preventDefault(); /* TODO: implement login logic */ }
 function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword = ''; loginError = ''; changePasswordMode = false; }
@@ -278,7 +285,7 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	<!-- Main layout row: Activity bar, sidebar, main, panel -->
 	<div class="flex flex-1 min-h-0">
 		<!-- Activity Bar -->
-				<ActivityBar {spaces} {getAbbreviation} />
+				<ActivityBar {spaces} />
 		<!-- Primary Side Bar (Accordion) -->
 		<aside class="bg-base-100 border-r border-base-300 shadow-sm w-60 min-w-60 flex flex-col">
 			<div class="flex flex-col flex-1">
