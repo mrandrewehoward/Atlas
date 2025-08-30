@@ -3,16 +3,20 @@
 <script lang="ts">
 import favicon from '$lib/assets/favicon.ico';
 import '../app.css';
-import ProjectsPanel from '$lib/components/ProjectsPanel.svelte';
-import TasksPanel from '$lib/components/TasksPanel.svelte';
-import TaskItemsPanel from '$lib/components/TaskItemsPanel.svelte';
+import ProjectList from '$lib/components/ProjectList.svelte';
+import TaskList from '$lib/components/TaskList.svelte';
+import TaskItemList from '$lib/components/TaskItemList.svelte';
 import HeaderBar from '$lib/components/HeaderBar.svelte';
 import ActivityBar from '$lib/components/ActivityBar.svelte';
 import SidebarAccordion from '$lib/components/SidebarAccordion.svelte';
 import StatusBar from '$lib/components/StatusBar.svelte';
 import TerminalPanel from '$lib/components/TerminalPanel.svelte';
+import ToastContainer from '$lib/components/ToastContainer.svelte';
+import LoginModal from '$lib/components/LoginModal.svelte';
+import SpaceSelector from '$lib/components/SpaceSelector.svelte';
 import { supabase } from '$lib/supabaseClient.js';
 import { onMount } from 'svelte';
+import { toastStore } from '$lib/stores/toast';
 
 // Universal CLI fun/utility messages (moved to module scope)
 const motds = [
@@ -72,6 +76,8 @@ onMount(() => {
 			}
 		});
 	})();
+	// Show a toast when the page is ready
+	toastStore.show('All items loaded', 'success');
 	// Keyboard shortcut for terminal: Ctrl+` or Ctrl+T
 	const keyHandler = (e: KeyboardEvent) => {
 		// Ctrl+` (backtick) toggles terminal
@@ -91,13 +97,14 @@ onMount(() => {
 });
 // Stubs for missing props/vars for layout to compile
 let spaces = $state([
-	{ id: 1, name: 'Projects' },
-	{ id: 2, name: 'Tasks' },
-	{ id: 3, name: 'Notes' },
-	{ id: 4, name: 'Settings' }
+		{ id: 1, name: 'Projects' },
+		{ id: 2, name: 'Tasks' },
+		{ id: 3, name: 'Notes' },
+		{ id: 4, name: 'Settings' }
 ]);
-function getAbbreviation(name: string) {
-	return name.charAt(0).toUpperCase();
+let selectedSpaceId = $state(spaces[0]?.id ?? null);
+function handleSelectSpace(id: number) {
+	selectedSpaceId = id;
 }
 let sidebarSection = $state('');
 function handleLogin(e: Event) { e.preventDefault(); /* TODO: implement login logic */ }
@@ -280,6 +287,7 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 
 
 <div class="min-h-screen flex flex-col bg-base-200">
+	<ToastContainer />
 	<!-- Header -->
 	<HeaderBar {loggedIn} onLogin={() => openLogin(false)} onLogout={logout} />
 	<!-- Main layout row: Activity bar, sidebar, main, panel -->
@@ -291,7 +299,12 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 			<div class="flex flex-col flex-1">
 				<!-- Projects section (top) -->
 				<div class="flex flex-col flex-1 relative">
-					<ProjectsPanel />
+					<ProjectList
+						projects={projects}
+						onSelect={() => {}}
+						loading={false}
+						error={''}
+					/>
 					<div class="flex-1"></div>
 					{#if !loggedIn}
 						<div class="absolute inset-0 z-20 bg-base-100/80"></div>
@@ -307,10 +320,24 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 			<div class="flex-1 flex flex-col min-w-0">
 				<div class="flex flex-1 min-h-0 gap-0 relative">
 					<section class="flex-1 min-w-0 border-r border-base-300 bg-base-100 flex flex-col p-0">
-						<TasksPanel />
+												<TaskList
+													tasks={tasks}
+													onEdit={() => {}}
+													onDelete={() => {}}
+													onToggle={() => {}}
+													loading={false}
+													error={''}
+												/>
 					</section>
 					<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
-						<TaskItemsPanel {taskItems} />
+												<TaskItemList
+													items={taskItems}
+													onEdit={() => {}}
+													onDelete={() => {}}
+													onToggle={() => {}}
+													loading={false}
+													error={''}
+												/>
 						<!-- {@render children()} -->
 					</section>
 					{#if !loggedIn}
@@ -332,21 +359,17 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 				onBlur={() => terminalInputActive = false}
 				onToggle={() => terminalOpen = !terminalOpen}
 			/>
-			<!-- Login Modal -->
-			{#if loginModalOpen}
-				<div class="fixed inset-0 z-50 flex items-center justify-center bg-base-300/60">
-					<form class="bg-base-200 border border-base-300 rounded-lg shadow-lg p-8 flex flex-col gap-6 w-full max-w-xs animate-fade-in-up" onsubmit={handleLogin}>
-						<h2 class="text-xl font-bold text-center text-emerald-700">{changePasswordMode ? 'Change Password' : 'Sign In'}</h2>
-						<input class="input input-primary input-bordered" type="email" placeholder="Email" aria-label="Email" bind:value={loginEmail} required />
-						<input class="input input-primary input-bordered" type="password" placeholder={changePasswordMode ? 'New Password' : 'Password'} aria-label="Password" bind:value={loginPassword} required />
-						{#if loginError}
-							<div class="text-error text-xs text-center">{loginError}</div>
-						{/if}
-						<button class="btn btn-primary w-full mt-2" type="submit">{changePasswordMode ? 'Change Password' : 'Sign In'}</button>
-						<button class="btn btn-secondary w-full mt-2" type="button" onclick={closeLogin}>Cancel</button>
-					</form>
-				</div>
-			{/if}
+			<LoginModal
+				open={loginModalOpen}
+				changePasswordMode={changePasswordMode}
+				loginEmail={loginEmail}
+				loginPassword={loginPassword}
+				loginError={loginError}
+				onEmailChange={v => loginEmail = v}
+				onPasswordChange={v => loginPassword = v}
+				onSubmit={handleLogin}
+				onCancel={closeLogin}
+			/>
 		</div>
 	</div>
 	<!-- Status Bar -->

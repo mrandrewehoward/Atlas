@@ -1,0 +1,40 @@
+<script lang="ts">
+  export let projects: Array<{ id: number; name: string; icon?: string; color?: string; priority?: string }> = [];
+  // selectedProjectId is not used in this component, so remove export
+  export let onSelect: (id: number) => void = () => {};
+  export let loading: boolean = false;
+  export let error: string = '';
+</script>
+
+<section class="flex flex-col h-full">
+  <div class="flex items-center px-3 h-9 border-b border-base-300 bg-base-200 font-semibold text-base-content text-xs tracking-widest select-none uppercase">
+    Projects
+  </div>
+  {#if loading}
+    <div class="p-3 text-xs text-base-content/60">Loading projects...</div>
+  {:else if error}
+    <div class="alert alert-error text-xs m-2">{error}</div>
+  {:else if projects.length === 0}
+    <div class="p-3 text-xs text-base-content/60">No projects found.</div>
+  {:else}
+    <ul class="flex flex-col divide-y divide-base-300 bg-base-100">
+      {#each projects as project, i}
+        <li class="group flex items-center px-0 h-9 relative">
+          <button
+            type="button"
+            class="flex items-center w-full h-9 px-3 cursor-pointer select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left"
+            aria-label={project.name}
+            on:click={() => onSelect(project.id)}
+          >
+            <span class="absolute inset-y-0 left-0 w-0.5 bg-emerald-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 rounded-sm transition-all"></span>
+            <span class="text-xs text-base-content/60 mr-2">{i + 1}</span>
+            <span class="font-medium text-base-content flex-1 truncate">{project.name}</span>
+            {#if project.priority}
+              <span class="badge badge-xs badge-outline ml-2 capitalize">{project.priority}</span>
+            {/if}
+          </button>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+</section>
