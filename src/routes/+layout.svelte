@@ -6,6 +6,7 @@
 	import ProjectsPanel from '$lib/components/ProjectsPanel.svelte';
 	import TasksPanel from '$lib/components/TasksPanel.svelte';
 	import TaskItemsPanel from '$lib/components/TaskItemsPanel.svelte';
+	import { supabase } from '$lib/supabaseClient.js';
 	let { children } = $props();
 	// Auth state
 	let loggedIn = $state(false);
@@ -13,19 +14,10 @@
 	let loginEmail = $state('');
 	let loginPassword = $state('');
 	let user = $state(null); // { email, username }
-	// Demo data for counts
-	let projects = $state([
-		{ id: 1, name: 'Atlas UI' },
-		{ id: 2, name: 'API' }
-	]);
-	let tasks = $state([
-		{ id: 1, name: 'Design UI' },
-		{ id: 2, name: 'Write Docs' }
-	]);
-	let taskItems = $state([
-		{ id: 1, name: 'Create wireframes' },
-		{ id: 2, name: 'Review PR' }
-	]);
+	let loginError = $state('');
+	let projects = $state([]);
+	let tasks = $state([]);
+	let taskItems = $state([]);
 	let terminalOpen = $state(true);
 	let sidebarSection = $state('projects');
 	const spaces = [
@@ -45,12 +37,43 @@
 	function closeLogin() {
 		loginModalOpen = false;
 	}
-	function handleLogin(e) {
+	async function handleLogin(e) {
 		e.preventDefault();
-		// Simulate login
-		user = { email: loginEmail, username: loginEmail.split('@')[0] };
+		loginError = '';
+		const { data, error } = await supabase.auth.signInWithPassword({
+			email: loginEmail,
+			password: loginPassword
+		});
+		if (error) {
+			loginError = error.message;
+			return;
+		}
+		// Get user info
+		user = data.user ? { email: data.user.email, username: data.user.user_metadata?.username || data.user.email.split('@')[0] } : null;
 		loggedIn = true;
 		loginModalOpen = false;
+		// Fetch user data
+		await fetchUserData();
+	}
+
+	async function fetchUserData() {
+		// Fetch projects
+		const { data: projectsData } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+		projects = projectsData || [];
+		// Fetch tasks
+		const { data: tasksData } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+		tasks = tasksData || [];
+		// Fetch task items
+		const { data: itemsData } = await supabase.from('items').select('*').order('created_at', { ascending: false });
+		taskItems = itemsData || [];
+	}
+	function logout() {
+		supabase.auth.signOut();
+		user = null;
+		loggedIn = false;
+		projects = [];
+		tasks = [];
+		taskItems = [];
 	}
 </script>
 
@@ -75,7 +98,7 @@
 			{#if !loggedIn}
 				<button class="btn btn-accent btn-sm" onclick={openLogin}>Login</button>
 			{:else}
-				<span class="text-xs font-mono text-base-content/70">{user?.username}</span>
+				<button class="btn btn-ghost btn-sm" onclick={logout}>Logout</button>
 			{/if}
 		</div>
 	</header>
@@ -171,6 +194,9 @@
 						<h2 class="text-xl font-bold text-center text-emerald-700">Sign In</h2>
 						<input class="input input-accent input-bordered" type="email" placeholder="Email" aria-label="Email" bind:value={loginEmail} required autofocus />
 						<input class="input input-accent input-bordered" type="password" placeholder="Password" aria-label="Password" bind:value={loginPassword} required />
+						{#if loginError}
+							<div class="text-error text-xs text-center">{loginError}</div>
+						{/if}
 						<button class="btn btn-accent w-full mt-2" type="submit">Sign In</button>
 						<button class="btn btn-ghost w-full mt-2" type="button" onclick={closeLogin}>Cancel</button>
 					</form>
