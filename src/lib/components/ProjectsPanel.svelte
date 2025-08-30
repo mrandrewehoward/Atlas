@@ -7,17 +7,17 @@ const projects = [
 </script>
 
 <section class="flex flex-col h-full">
-  <div class="stat bg-base-100 rounded-md shadow-sm mb-2">
-    <div class="stat-value text-base-content">Projects</div>
+  <div class="flex items-center px-3 h-9 border-b border-base-300 bg-base-200 font-semibold text-base-content text-xs tracking-widest select-none uppercase">
+    Projects
   </div>
-  <div class="flex flex-col gap-2">
-    {#each projects as project}
-      <div class="card card-compact bg-base-200 border-l-4 border-{project.color} p-2 cursor-pointer hover:bg-base-300 transition">
-        <div class="flex items-center gap-2">
-          <span class="font-semibold">{project.name}</span>
-          <span class="badge badge-xs badge-outline ml-auto capitalize">{project.priority}</span>
-        </div>
-      </div>
+  <ul class="flex flex-col divide-y divide-base-300 bg-base-100">
+    {#each projects as project, i}
+  <li class="group flex items-center px-3 h-9 cursor-pointer select-none hover:bg-base-200 focus-within:bg-base-200 transition-all relative aria-label={project.name}">
+      <span class="absolute inset-y-0 left-0 w-0.5 bg-emerald-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 rounded-sm transition-all"></span>
+        <span class="text-xs text-base-content/60 mr-2">{i + 1}</span>
+        <span class="font-medium text-base-content flex-1 truncate">{project.name}</span>
+        <span class="badge badge-xs badge-outline ml-2 capitalize">{project.priority}</span>
+      </li>
     {/each}
-  </div>
+  </ul>
 </section>

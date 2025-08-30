@@ -1,8 +1,10 @@
+
 <script>
-// No props for now, can add logo, nav, etc. later
+  import { loginDrawerOpen } from '$lib/stores/loginDrawer.js';
+  function openDrawer() { loginDrawerOpen.set(true); }
 </script>
 
-<header class="navbar bg-base-100 shadow-sm border-b border-base-200 backdrop-blur-md">
+<header class="navbar bg-base-100 border-b border-base-300 fixed top-0 left-0 w-full z-50">
   <div class="navbar-start">
     <a href="/" class="btn btn-ghost text-xl font-mono">Atlas</a>
   </div>
@@ -13,6 +15,6 @@
     </ul>
   </div>
   <div class="navbar-end">
-    <a href="/login" class="btn btn-primary">Login</a>
+  <button class="btn btn-primary" aria-label="Login" onclick={openDrawer}>Login</button>
   </div>
 </header>

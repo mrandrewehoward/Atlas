@@ -7,18 +7,22 @@ const tasks = [
 </script>
 
 <section class="flex flex-col h-full">
-  <div class="stat bg-base-100 rounded-md shadow-sm mb-2">
-    <div class="stat-value text-base-content">Tasks</div>
+  <div class="flex items-center px-3 h-9 border-b border-base-300 bg-base-200 font-semibold text-base-content text-xs tracking-widest select-none uppercase">
+    Tasks
   </div>
-  <ul class="bg-base-200 rounded-md w-full flex flex-col gap-2 p-0">
+  <ul class="flex flex-col divide-y divide-base-300 bg-base-100">
     {#each tasks as task}
-  <li class="flex flex-row items-center gap-2 whitespace-nowrap overflow-hidden text-ellipsis px-2 py-1 rounded">
-        <input type="checkbox" class="checkbox checkbox-xs" />
-        <span class="flex-1">{task.name}</span>
-        <span class="badge badge-xs badge-outline capitalize">{task.priority}</span>
-        <span class="badge badge-xs badge-neutral capitalize">{task.status}</span>
-  <button class="btn btn-xs btn-ghost"></button>
-  <button class="btn btn-xs btn-ghost"></button>
+  <li class="group flex items-center px-3 h-9 cursor-pointer select-none hover:bg-base-200 focus-within:bg-base-200 transition-all text-xs font-mono tracking-tight"
+      aria-label={task.name}>
+      <span class="absolute inset-y-0 left-0 w-0.5 bg-blue-300 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 rounded-sm transition-all"></span>
+        <input type="checkbox" class="checkbox checkbox-xs mr-2" />
+        <span class="flex-1 truncate">{task.name}</span>
+        <span class="badge badge-xs badge-outline ml-2 capitalize">{task.priority}</span>
+        <span class="badge badge-xs badge-neutral ml-2 capitalize">{task.status}</span>
+        <span class="flex flex-row gap-1 ml-2">
+          <button class="btn btn-xs btn-ghost px-1" aria-label="Edit task"></button>
+          <button class="btn btn-xs btn-ghost px-1" aria-label="Delete task"></button>
+        </span>
       </li>
     {/each}
   </ul>
