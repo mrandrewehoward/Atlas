@@ -1,34 +1,86 @@
 
 
-<script>
-	import favicon from '$lib/assets/favicon.ico';
-	import '../app.css';
-	import ProjectsPanel from '$lib/components/ProjectsPanel.svelte';
-	import TasksPanel from '$lib/components/TasksPanel.svelte';
-	import TaskItemsPanel from '$lib/components/TaskItemsPanel.svelte';
-	import { supabase } from '$lib/supabaseClient.js';
+<script lang="ts">
+import favicon from '$lib/assets/favicon.ico';
+import '../app.css';
+import ProjectsPanel from '$lib/components/ProjectsPanel.svelte';
+import TasksPanel from '$lib/components/TasksPanel.svelte';
+import TaskItemsPanel from '$lib/components/TaskItemsPanel.svelte';
+import { supabase } from '$lib/supabaseClient.js';
+import { onMount } from 'svelte';
+onMount(async () => {
+		const { data: { session } } = await supabase.auth.getSession();
+		if (session && session.user) {
+			user = {
+				email: session.user.email ?? "",
+				username: session.user.user_metadata?.username ?? session.user.email?.split('@')[0] ?? ""
+			};
+			loggedIn = true;
+			await fetchUserData();
+		}
+		// Listen for auth state changes
+			supabase.auth.onAuthStateChange((_event: any, session: any) => {
+			if (session && session.user) {
+				user = {
+					email: session.user.email ?? "",
+					username: session.user.user_metadata?.username ?? session.user.email?.split('@')[0] ?? ""
+				};
+				loggedIn = true;
+				fetchUserData();
+			} else {
+				user = null;
+				loggedIn = false;
+				projects = [];
+				tasks = [];
+				taskItems = [];
+			}
+		});
+
+	// Keyboard shortcut for terminal: Ctrl+` or Ctrl+T
+			const keyHandler = (e: KeyboardEvent) => {
+				// Ctrl+` (backtick) toggles terminal
+				if (e.ctrlKey && (e.key === '`' || e.key === '~')) {
+					e.preventDefault();
+					terminalOpen = !terminalOpen;
+					if (terminalOpen) {
+						setTimeout(() => {
+							const input = document.getElementById('atlas-terminal-input');
+							if (input) input.focus();
+						}, 0);
+					}
+				}
+			};
+	window.addEventListener('keydown', keyHandler);
+	return () => window.removeEventListener('keydown', keyHandler);
+	});
 	let { children } = $props();
 	// Auth state
 	let loggedIn = $state(false);
 	let loginModalOpen = $state(false);
 	let loginEmail = $state('');
 	let loginPassword = $state('');
-	let user = $state(null); // { email, username }
+	let user: null | { email: string; username: string } = $state(null); // { email, username }
 	let loginError = $state('');
-	let projects = $state([]);
-	let tasks = $state([]);
-	let taskItems = $state([]);
+	let projects: any[] = $state([]);
+	let tasks: any[] = $state([]);
+	let taskItems: any[] = $state([]);
 	let terminalOpen = $state(true);
+	let terminalLines = $state([
+	 { text: 'Atlas Terminal Ready. Type "login" to begin.', type: 'info', blurred: false }
+	]);
+	let terminalInput = $state('');
+	let terminalInputActive = $state(false);
+	let terminalBlurred = $state(false);
 	let sidebarSection = $state('projects');
 	const spaces = [
 		{ id: 1, name: 'Home' },
 		{ id: 2, name: 'Work' },
 		{ id: 3, name: 'Camping' }
 	];
-	function getAbbreviation(name) {
+	function getAbbreviation(name: string) {
 		return name
 			.split(/\s+/)
-			.map(word => word.slice(0, 2).toUpperCase())
+			.map((word: string) => word.slice(0, 2).toUpperCase())
 			.join('');
 	}
 	function openLogin() {
@@ -37,7 +89,7 @@
 	function closeLogin() {
 		loginModalOpen = false;
 	}
-	async function handleLogin(e) {
+	async function handleLogin(e: Event) {
 		e.preventDefault();
 		loginError = '';
 		const { data, error } = await supabase.auth.signInWithPassword({
@@ -49,11 +101,26 @@
 			return;
 		}
 		// Get user info
-		user = data.user ? { email: data.user.email, username: data.user.user_metadata?.username || data.user.email.split('@')[0] } : null;
+		user = data.user
+			? {
+					email: data.user.email ?? "",
+					username: data.user.user_metadata?.username ?? data.user.email?.split('@')[0] ?? ""
+				}
+			: null;
 		loggedIn = true;
 		loginModalOpen = false;
 		// Fetch user data
 		await fetchUserData();
+		// Add success message to terminal and focus input
+		terminalLines = [
+			...terminalLines.map(l => ({ ...l, blurred: false })),
+			{ text: 'Login successful.', type: 'success', blurred: false }
+		];
+		setTimeout(() => {
+			const input = document.getElementById('atlas-terminal-input');
+			if (input) input.focus();
+			scrollTerminalToBottom();
+		}, 0);
 	}
 
 	async function fetchUserData() {
@@ -68,13 +135,48 @@
 		taskItems = itemsData || [];
 	}
 	function logout() {
-		supabase.auth.signOut();
-		user = null;
-		loggedIn = false;
-		projects = [];
-		tasks = [];
-		taskItems = [];
+			supabase.auth.signOut();
+			user = null;
+			loggedIn = false;
+			projects = [];
+			tasks = [];
+			taskItems = [];
+			terminalBlurred = true;
+			terminalLines = [
+				...terminalLines.map(l => ({ ...l, blurred: true })),
+				{ text: 'Logged out.', type: 'info', blurred: false }
+			];
+			// Keep terminal input enabled so user can type login again
 	}
+
+	function handleTerminalInput(e: KeyboardEvent) {
+		if (e.key !== 'Enter') return;
+		const cmd = terminalInput.trim().toLowerCase();
+		terminalLines = [...terminalLines, { text: '> ' + terminalInput, type: 'input', blurred: false }];
+		if (!loggedIn) {
+			if (cmd === 'login') {
+				terminalLines = [...terminalLines, { text: 'Enter credentials.', type: 'info', blurred: false }];
+				openLogin();
+			} else {
+				terminalLines = [...terminalLines, { text: 'Unknown command.', type: 'error', blurred: false }];
+			}
+		} else {
+			if (cmd === 'logout') {
+				logout();
+			} else {
+				terminalLines = [...terminalLines, { text: 'Unknown command.', type: 'error', blurred: false }];
+			}
+		}
+		terminalInput = '';
+		setTimeout(() => scrollTerminalToBottom(), 0);
+	}
+
+	function scrollTerminalToBottom() {
+		const el = document.getElementById('atlas-terminal-scroll');
+		if (el) el.scrollTop = el.scrollHeight;
+	}
+
+
 </script>
 
 
@@ -96,7 +198,7 @@
 		</div>
 		<div class="flex items-center gap-2">
 			{#if !loggedIn}
-				<button class="btn btn-accent btn-sm" onclick={openLogin}>Login</button>
+				<button class="btn btn-primary btn-sm" onclick={openLogin}>Login</button>
 			{:else}
 				<button class="btn btn-ghost btn-sm" onclick={logout}>Logout</button>
 			{/if}
@@ -105,7 +207,7 @@
 	<!-- Main layout row: Activity bar, sidebar, main, panel -->
 	<div class="flex flex-1 min-h-0">
 		<!-- Activity Bar -->
-				<nav class="flex flex-col items-center gap-4 py-4 px-1 bg-base-100 border-r border-base-300 shadow-sm w-14 min-w-14" aria-label="Spaces Bar">
+				<nav class="flex flex-col items-center gap-4 py-4 px-1 bg-base-200 border-r border-base-300 shadow-sm w-14 min-w-14" aria-label="Spaces Bar">
 					{#each spaces as space}
 						<button class="btn btn-ghost btn-circle w-10 h-10 flex items-center justify-center text-xs font-bold" aria-label={space.name} tabindex="0">
 							{getAbbreviation(space.name)}
@@ -165,26 +267,71 @@
 					</section>
 					{#if !loggedIn}
 						<div class="absolute inset-0 z-20 flex items-center justify-center bg-base-100/80">
-							<button class="btn btn-accent btn-lg" onclick={openLogin}>Sign in to view your workspace</button>
+							<button class="btn btn-primary btn-lg" onclick={openLogin}>Sign in to view your workspace</button>
 						</div>
 					{/if}
 				</div>
 			</div>
 			<!-- Terminal Panel always at the bottom -->
 			<div class="relative w-full select-none">
-				<div class="w-full border-t border-base-300">
-					<button type="button"
-						class="flex items-center w-full px-4 h-8 bg-base-200 text-base-content font-mono text-xs border-b border-base-300 cursor-pointer select-none"
-						onclick={() => terminalOpen = !terminalOpen}
-						aria-label="Toggle terminal"
-						onkeydown={e => (e.key === 'Enter' || e.key === ' ') && (terminalOpen = !terminalOpen)}>
-						<span class="flex-1">TERMINAL</span>
-						<span class="text-xs">{terminalOpen ? '▼' : '▲'}</span>
-					</button>
-				</div>
+								<div class="w-full border-t border-base-300">
+										<button type="button"
+												class="flex items-center w-full px-4 h-8 bg-base-200 text-base-content font-mono text-xs border-b border-base-300 cursor-pointer select-none"
+												onclick={() => terminalOpen = !terminalOpen}
+												aria-label="Toggle terminal"
+												onkeydown={e => (e.key === 'Enter' || e.key === ' ') && (terminalOpen = !terminalOpen)}>
+												<span class="flex-1">TERMINAL</span>
+																								<span class="ml-4 flex items-center gap-1 text-xs opacity-60">
+																									<kbd class="kbd kbd-xs">Ctrl</kbd>
+																									<span>+</span>
+																									<kbd class="kbd kbd-xs">`</kbd>
+																								</span>
+												<span class="text-xs">{terminalOpen ? '▼' : '▲'}</span>
+										</button>
+								</div>
 				<div class="overflow-hidden transition-all duration-300 bg-base-200 border-t border-base-300"
-					style="height: {terminalOpen ? '160px' : '0'};">
-					<div class="h-full p-3 text-xs font-mono">Terminal output here...</div>
+					style="height: {terminalOpen ? '220px' : '0'};">
+					<div id="atlas-terminal-scroll" class="h-full max-h-56 p-2 text-xs font-mono overflow-y-auto flex flex-col gap-0.5">
+						{#each terminalLines as line}
+							<div class="whitespace-pre-wrap break-all transition-all px-1 py-0.5 select-text border-l-2"
+								class:border-info={line.type === 'info' && !line.blurred}
+								class:border-success={line.type === 'success' && !line.blurred}
+								class:border-error={line.type === 'error' && !line.blurred}
+								class:bg-base-200={line.type !== 'input' && !line.blurred}
+								class:text-info={line.type === 'info' && !line.blurred}
+								class:text-success={line.type === 'success' && !line.blurred}
+								class:text-error={line.type === 'error' && !line.blurred}
+								class:text-base-content={line.type === 'input' && !line.blurred}
+								class:opacity-40={line.blurred}
+								style="border-color:rgba(0,0,0,0.08);"
+								>{line.text}</div>
+						{/each}
+						{#if !loggedIn}
+							<div class="flex items-center gap-2 text-base-content/70 mt-2 animate-pulse">
+								<span class="inline-block w-2 h-2 rounded-full bg-base-content animate-ping"></span>
+								<span>awaiting input...</span>
+							</div>
+						{/if}
+						{#if terminalOpen}
+							<div class="flex items-center mt-2">
+								<span class="text-primary font-bold">&gt;</span>
+								<input
+									id="atlas-terminal-input"
+									class="bg-transparent border-none outline-none flex-1 ml-2 text-xs font-mono text-base-content"
+									style="min-width: 2ch;"
+									type="text"
+									bind:value={terminalInput}
+									onkeydown={handleTerminalInput}
+									disabled={!terminalOpen || loginModalOpen}
+									autocomplete="off"
+									spellcheck="false"
+									onfocus={() => terminalInputActive = true}
+									onblur={() => terminalInputActive = false}
+								/>
+								<span class={terminalInputActive ? 'animate-pulse' : ''}>&#9608;</span>
+							</div>
+						{/if}
+					</div>
 				</div>
 			</div>
 			<!-- Login Modal -->
@@ -192,13 +339,13 @@
 				<div class="fixed inset-0 z-50 flex items-center justify-center bg-base-300/60">
 					<form class="bg-base-200 border border-base-300 rounded-lg shadow-lg p-8 flex flex-col gap-6 w-full max-w-xs animate-fade-in-up" onsubmit={handleLogin}>
 						<h2 class="text-xl font-bold text-center text-emerald-700">Sign In</h2>
-						<input class="input input-accent input-bordered" type="email" placeholder="Email" aria-label="Email" bind:value={loginEmail} required autofocus />
-						<input class="input input-accent input-bordered" type="password" placeholder="Password" aria-label="Password" bind:value={loginPassword} required />
+						<input class="input input-primary input-bordered" type="email" placeholder="Email" aria-label="Email" bind:value={loginEmail} required />
+						<input class="input input-primary input-bordered" type="password" placeholder="Password" aria-label="Password" bind:value={loginPassword} required />
 						{#if loginError}
 							<div class="text-error text-xs text-center">{loginError}</div>
 						{/if}
-						<button class="btn btn-accent w-full mt-2" type="submit">Sign In</button>
-						<button class="btn btn-ghost w-full mt-2" type="button" onclick={closeLogin}>Cancel</button>
+						<button class="btn btn-primary w-full mt-2" type="submit">Sign In</button>
+						<button class="btn btn-secondary w-full mt-2" type="button" onclick={closeLogin}>Cancel</button>
 					</form>
 				</div>
 			{/if}
