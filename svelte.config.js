@@ -1,7 +1,10 @@
 import adapter from '@sveltejs/adapter-auto';
 
 /** @type {import('@sveltejs/kit').Config} */
-// Adapter removed. Add your preferred adapter below.
-const config = { kit: {} };
+const config = {
+	kit: {
+		adapter: adapter()
+	}
+};
 
 export default config;
