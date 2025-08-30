@@ -52,7 +52,28 @@ This file tracks key features, screens, and implementation tasks based on your d
 
 ---
 
-## Notes
+## Immediate Action Items (Refactor Plan)
 
-- See `db-feature-mapping.md` and `copilot-instructions.md` for full details.
-- Update this file as features are added, changed, or completed.
+- Refactor all large Svelte files (especially +layout.svelte) into focused, testable components:
+	- TerminalPanel.svelte
+	- HeaderBar.svelte
+	- StatusBar.svelte
+	- ActivityBar.svelte
+	- SidebarAccordion.svelte
+	- LoginModal.svelte
+	- SpaceSelector.svelte
+	- ProjectList.svelte
+	- TaskList.svelte
+	- TaskItemList.svelte
+	- SettingsPanel.svelte
+	- SearchPanel.svelte
+- Move all Supabase logic to a central module (lib/api or lib/supabase).
+- Add error/loading/empty states to all panels and data fetches.
+- Use DaisyUI 5 and Tailwind 4 classes only, with the emerald theme (no custom CSS outside of those).
+- Type all data models and props (TypeScript).
+- Add DaisyUI alerts for all errors.
+- Add keyboard navigation and ARIA to all interactive elements.
+- Add a global store for user/session state if needed.
+
+-- See `db-feature-mapping.md` and `copilot-instructions.md` for full details.
+-- Update this file as features are added, changed, or completed.
