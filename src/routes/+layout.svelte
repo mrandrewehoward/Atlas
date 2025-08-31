@@ -1,5 +1,3 @@
-
-
 <script lang="ts">
 import favicon from '$lib/assets/favicon.ico';
 import '../app.css';
@@ -14,7 +12,9 @@ import TerminalPanel from '$lib/components/TerminalPanel.svelte';
 import ToastContainer from '$lib/components/ToastContainer.svelte';
 import LoginModal from '$lib/components/LoginModal.svelte';
 import SpaceSelector from '$lib/components/SpaceSelector.svelte';
+import { spaces, spacesLoading, spacesError, fetchSpaces } from '$lib/stores/spaces';
 import { supabase } from '$lib/supabaseClient.js';
+import { projects as projectsStore, projectsLoading, projectsError, fetchProjects } from '$lib/stores/projects';
 import { onMount } from 'svelte';
 import { toastStore } from '$lib/stores/toast';
 
@@ -70,7 +70,7 @@ onMount(() => {
 			} else {
 				user = null;
 				loggedIn = false;
-				projects = [];
+				// projects = []; // now handled by store
 				tasks = [];
 				taskItems = [];
 			}
@@ -96,19 +96,69 @@ onMount(() => {
 	return () => window.removeEventListener('keydown', keyHandler);
 });
 // Stubs for missing props/vars for layout to compile
-let spaces = $state([
-		{ id: 1, name: 'Projects' },
-		{ id: 2, name: 'Tasks' },
-		{ id: 3, name: 'Notes' },
-		{ id: 4, name: 'Settings' }
-]);
-let selectedSpaceId = $state(spaces[0]?.id ?? null);
-function handleSelectSpace(id: number) {
-	selectedSpaceId = id;
+
+let selectedSpaceId = $state(null);
+let selectedProjectIds = $state(new Set<number>());
+
+function handleToggleProject(id: number) {
+	if (selectedProjectIds.has(id)) {
+		selectedProjectIds.delete(id);
+	} else {
+		selectedProjectIds.add(id);
+	}
+	// Force reactivity for Set
+	selectedProjectIds = new Set(selectedProjectIds);
 }
+function handleSelectSpace(id: string) {
+	selectedSpaceId = id;
+	fetchProjects(id);
+}
+
+onMount(() => {
+	fetchSpaces();
+});
 let sidebarSection = $state('');
-function handleLogin(e: Event) { e.preventDefault(); /* TODO: implement login logic */ }
-function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword = ''; loginError = ''; changePasswordMode = false; }
+
+async function handleLogin(e: Event) {
+	e.preventDefault();
+	loginError = '';
+	if (!loginEmail || !loginPassword) {
+		loginError = 'Email and password are required.';
+		return;
+	}
+	if (registerMode) {
+		// Registration flow
+		const { error } = await supabase.auth.signUp({
+			email: loginEmail,
+			password: loginPassword
+		});
+		if (error) {
+			loginError = error.message || 'Registration failed.';
+		} else {
+			registerMode = false;
+			loginModalOpen = false;
+			loginEmail = '';
+			loginPassword = '';
+			loginError = '';
+			toastStore.show('Registration successful! Please check your email to confirm your account.', 'success');
+		}
+	} else {
+		// Login flow
+		const { error } = await supabase.auth.signInWithPassword({
+			email: loginEmail,
+			password: loginPassword
+		});
+		if (error) {
+			loginError = error.message || 'Login failed.';
+		} else {
+			loginModalOpen = false;
+			loginEmail = '';
+			loginPassword = '';
+			loginError = '';
+		}
+	}
+}
+function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword = ''; loginError = ''; changePasswordMode = false; registerMode = false; }
 
 	let { children } = $props();
 	// Auth state
@@ -118,7 +168,7 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	let loginPassword = $state('');
 	let user: { email: string; username: string } | null = $state(null); // { email, username }
 	let loginError = $state('');
-	let projects: any[] = $state([]);
+	// let projects: any[] = $state([]); // removed, now using store
 	let tasks: any[] = $state([]);
 	let taskItems: any[] = $state([]);
 	let terminalOpen = $state(true);
@@ -130,13 +180,16 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	let terminalBlurred = $state(false);
 	let awaitingPasswordChangeConfirm = $state(false);
 	let changePasswordMode = $state(false);
+	let registerMode = $state(false);
+
 
 	function getTerminalWelcome() {
 		return 'Welcome to Atlas Workbench! Type /help for commands.';
 	}
 
-	function openLogin(changePassword = false) {
+	function openLogin(changePassword = false, register = false) {
 		changePasswordMode = changePassword;
+		registerMode = register;
 		loginModalOpen = true;
 		loginEmail = '';
 		loginPassword = '';
@@ -244,22 +297,12 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 		setTimeout(() => scrollTerminalToBottom(), 0);
 	}
 
-	async function fetchUserData() {
-		// Fetch projects
-		const { data: projectsData } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-		projects = projectsData || [];
-		// Fetch tasks
-		const { data: tasksData } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
-		tasks = tasksData || [];
-		// Fetch task items
-		const { data: itemsData } = await supabase.from('items').select('*').order('created_at', { ascending: false });
-		taskItems = itemsData || [];
-	}
+	// (duplicate removed)
 	function logout() {
 		supabase.auth.signOut();
 		user = null;
 		loggedIn = false;
-		projects = [];
+	// projects = []; // now handled by store
 		tasks = [];
 		taskItems = [];
 		terminalBlurred = true;
@@ -271,6 +314,18 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	}
 
 	// ...existing code...
+	// Move fetchUserData above its first usage to fix TS error
+	async function fetchUserData() {
+		// Fetch projects
+		const { data: projectsData } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+	// projects = projectsData || []; // now handled by store
+		// Fetch tasks
+		const { data: tasksData } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+		tasks = tasksData || [];
+		// Fetch task items
+		const { data: itemsData } = await supabase.from('items').select('*').order('created_at', { ascending: false });
+		taskItems = itemsData || [];
+	}
 
 	function scrollTerminalToBottom() {
 		const el = document.getElementById('atlas-terminal-scroll');
@@ -293,18 +348,25 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	<!-- Main layout row: Activity bar, sidebar, main, panel -->
 	<div class="flex flex-1 min-h-0">
 		<!-- Activity Bar -->
-				<ActivityBar {spaces} />
+				<SpaceSelector on:select={e => handleSelectSpace(e.detail)} />
 		<!-- Primary Side Bar (Accordion) -->
 		<aside class="bg-base-100 border-r border-base-300 shadow-sm w-60 min-w-60 flex flex-col">
 			<div class="flex flex-col flex-1">
 				<!-- Projects section (top) -->
 				<div class="flex flex-col flex-1 relative">
-					<ProjectList
-						projects={projects}
-						onSelect={() => {}}
-						loading={false}
-						error={''}
-					/>
+					{#if !selectedSpaceId}
+						<div class="flex items-center justify-center h-32 text-base-content/40 italic select-none">
+							Select a space to continue
+						</div>
+					{:else}
+						<ProjectList
+							projects={$projectsStore}
+							selectedProjectIds={selectedProjectIds}
+							onToggleProject={handleToggleProject}
+							loading={$projectsLoading}
+							error={$projectsError}
+						/>
+					{/if}
 					<div class="flex-1"></div>
 					{#if !loggedIn}
 						<div class="absolute inset-0 z-20 bg-base-100/80"></div>
@@ -362,16 +424,18 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 			<LoginModal
 				open={loginModalOpen}
 				changePasswordMode={changePasswordMode}
+				registerMode={registerMode}
 				loginEmail={loginEmail}
 				loginPassword={loginPassword}
 				loginError={loginError}
 				onEmailChange={v => loginEmail = v}
 				onPasswordChange={v => loginPassword = v}
 				onSubmit={handleLogin}
-				onCancel={closeLogin}
+				onCancel={() => { closeLogin(); registerMode = false; }}
+				onRegister={() => { registerMode = true; loginError = ''; }}
 			/>
 		</div>
 	</div>
 	<!-- Status Bar -->
-	<StatusBar {loggedIn} {user} {projects} {tasks} {taskItems} />
+	<StatusBar {loggedIn} {user} projects={$projectsStore} {tasks} {taskItems} />
 </div>

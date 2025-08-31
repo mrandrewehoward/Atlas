@@ -1,7 +1,7 @@
 <script lang="ts">
   export let projects: Array<{ id: number; name: string; icon?: string; color?: string; priority?: string }> = [];
-  // selectedProjectId is not used in this component, so remove export
-  export let onSelect: (id: number) => void = () => {};
+  export let selectedProjectIds: Set<number> | number[] = [];
+  export let onToggleProject: (id: number) => void = () => {};
   export let loading: boolean = false;
   export let error: string = '';
 </script>
@@ -20,19 +20,21 @@
     <ul class="flex flex-col divide-y divide-base-300 bg-base-100">
       {#each projects as project, i}
         <li class="group flex items-center px-0 h-9 relative">
-          <button
-            type="button"
-            class="flex items-center w-full h-9 px-3 cursor-pointer select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left"
-            aria-label={project.name}
-            on:click={() => onSelect(project.id)}
-          >
+          <label class="flex items-center w-full h-9 px-3 cursor-pointer select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left">
             <span class="absolute inset-y-0 left-0 w-0.5 bg-emerald-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 rounded-sm transition-all"></span>
+            <input
+              type="checkbox"
+              class="checkbox checkbox-xs mr-2"
+              checked={Array.isArray(selectedProjectIds) ? selectedProjectIds.includes(project.id) : selectedProjectIds.has(project.id)}
+              on:change={() => onToggleProject(project.id)}
+              aria-label="Select project {project.name}"
+            />
             <span class="text-xs text-base-content/60 mr-2">{i + 1}</span>
             <span class="font-medium text-base-content flex-1 truncate">{project.name}</span>
             {#if project.priority}
               <span class="badge badge-xs badge-outline ml-2 capitalize">{project.priority}</span>
             {/if}
-          </button>
+          </label>
         </li>
       {/each}
     </ul>
