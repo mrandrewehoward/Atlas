@@ -6,7 +6,11 @@
 		<title>Atlas - Holding someone's world up</title>
 		%sveltekit.head%
 		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-	</head>
+			<script>
+				// Set light mode by default, no flash
+				document.documentElement.setAttribute('data-theme', 'emerald');
+			</script>
+		</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>

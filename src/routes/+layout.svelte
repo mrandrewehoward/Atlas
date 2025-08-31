@@ -123,16 +123,20 @@ function handleToggleProject(id: string) {
 			selectedProjectId = null;
 			tasks.set([]);
 			localStorage.removeItem('selectedProjectId');
+			// Drill reset: clear task and task item selection
 			selectedTaskId = null;
 			localStorage.removeItem('selectedTaskId');
+			taskItems.set([]);
 		}
 	} else {
 		selectedProjectIds.add(id);
 		selectedProjectId = id;
 		fetchTasks(id);
 		localStorage.setItem('selectedProjectId', id);
+		// Drill reset: clear task and task item selection
 		selectedTaskId = null;
 		localStorage.removeItem('selectedTaskId');
+		taskItems.set([]);
 	}
 	selectedProjectIds = new Set(selectedProjectIds);
 }
@@ -146,6 +150,8 @@ function handleToggleTask(id: string) {
 		selectedTaskId = id;
 		localStorage.setItem('selectedTaskId', id);
 		fetchTaskItems(id);
+		// Drill reset: clear task item selection (if you add deeper levels in future)
+		// (No deeper entity now, so just clear items)
 	}
 }
 function handleSelectSpace(id: string) {
@@ -158,6 +164,8 @@ function handleSelectSpace(id: string) {
 	selectedTaskId = null;
 	localStorage.removeItem('selectedTaskId');
 	tasks.set([]);
+	// Drill reset: clear task items when switching space
+	taskItems.set([]);
 }
 
 import { get } from 'svelte/store';
@@ -167,82 +175,125 @@ onMount(() => {
 	const storedSpaceId = localStorage.getItem('selectedSpaceId');
 	const storedProjectId = localStorage.getItem('selectedProjectId');
 	const storedTaskId = localStorage.getItem('selectedTaskId');
-	if (storedSpaceId) {
-		console.log('[Atlas] Restoring space:', storedSpaceId);
-		selectedSpaceId = storedSpaceId;
-		fetchProjects(storedSpaceId).then(() => {
-			if (storedProjectId) {
-				const id = storedProjectId;
-				console.log('[Atlas] Restoring project:', id);
-				selectedProjectId = id;
-				selectedProjectIds.add(id);
-				fetchTasks(id).then(() => {
-					if (storedTaskId) {
-						selectedTaskId = storedTaskId;
-						console.log('[Atlas] Restoring task:', selectedTaskId);
-						fetchTaskItems(storedTaskId);
-					}
-				});
-				selectedProjectIds = new Set(selectedProjectIds);
-			}
-		});
-	}
-	fetchSpaces();
+	fetchSpaces().then(() => {
+		// Always sort spaces alpha by name
+		let spacesArr = get(spaces);
+		if (spacesArr && spacesArr.length > 0) {
+			spacesArr = [...spacesArr].sort((a, b) => a.name.localeCompare(b.name));
+			// Always select first alpha space on load
+			selectedSpaceId = spacesArr[0].id;
+			localStorage.setItem('selectedSpaceId', selectedSpaceId);
+			fetchProjects(selectedSpaceId).then(() => {
+				if (storedProjectId) {
+					const id = storedProjectId;
+					selectedProjectId = id;
+					selectedProjectIds.add(id);
+					fetchTasks(id).then(() => {
+						if (storedTaskId) {
+							selectedTaskId = storedTaskId;
+							fetchTaskItems(storedTaskId);
+						}
+					});
+					selectedProjectIds = new Set(selectedProjectIds);
+				}
+			});
+		}
+	});
 
-		// Fallback: if a project is selected but tasks are empty and not loading, fetch tasks
-		setTimeout(() => {
-			if (selectedProjectId && get(tasks).length === 0 && !get(tasksLoading)) {
-				console.log('[Atlas] Fallback: fetching tasks for project', selectedProjectId);
-				fetchTasks(selectedProjectId);
-			}
-			// Fallback: if a task is selected but taskItems are empty and not loading, fetch taskItems
-			if (selectedTaskId && get(taskItems).length === 0 && !get(taskItemsLoading)) {
-				console.log('[Atlas] Fallback: fetching task items for task', selectedTaskId);
-				fetchTaskItems(selectedTaskId);
-			}
-		}, 0);
+	// Fallback: if a project is selected but tasks are empty and not loading, fetch tasks
+	setTimeout(() => {
+		if (selectedProjectId && get(tasks).length === 0 && !get(tasksLoading)) {
+			fetchTasks(selectedProjectId);
+		}
+		// Fallback: if a task is selected but taskItems are empty and not loading, fetch taskItems
+		if (selectedTaskId && get(taskItems).length === 0 && !get(taskItemsLoading)) {
+			fetchTaskItems(selectedTaskId);
+		}
+	}, 0);
 });
 let sidebarSection = $state('');
 
 async function handleLogin(e: Event) {
-	e.preventDefault();
-	loginError = '';
-	if (!loginEmail || !loginPassword) {
-		loginError = 'Email and password are required.';
-		return;
-	}
-	if (registerMode) {
-		// Registration flow
-		const { error } = await supabase.auth.signUp({
-			email: loginEmail,
-			password: loginPassword
-		});
-		if (error) {
-			loginError = error.message || 'Registration failed.';
-		} else {
-			registerMode = false;
-			loginModalOpen = false;
-			loginEmail = '';
-			loginPassword = '';
-			loginError = '';
-			toastStore.show('Registration successful! Please check your email to confirm your account.', 'success');
-		}
-	} else {
-		// Login flow
-		const { error } = await supabase.auth.signInWithPassword({
-			email: loginEmail,
-			password: loginPassword
-		});
-		if (error) {
-			loginError = error.message || 'Login failed.';
-		} else {
-			loginModalOpen = false;
-			loginEmail = '';
-			loginPassword = '';
-			loginError = '';
-		}
-	}
+    e.preventDefault();
+    loginError = '';
+    if (!loginEmail || !loginPassword) {
+        loginError = 'Email and password are required.';
+        return;
+    }
+    if (registerMode) {
+        // Registration flow
+        const { error } = await supabase.auth.signUp({
+            email: loginEmail,
+            password: loginPassword
+        });
+        if (error) {
+            loginError = error.message || 'Registration failed.';
+        } else {
+            registerMode = false;
+            loginModalOpen = false;
+            loginEmail = '';
+            loginPassword = '';
+            loginError = '';
+            toastStore.show('Registration successful! Please check your email to confirm your account.', 'success');
+        }
+    } else {
+        // Login flow
+        const { error } = await supabase.auth.signInWithPassword({
+            email: loginEmail,
+            password: loginPassword
+        });
+        if (error) {
+            loginError = error.message || 'Login failed.';
+        } else {
+            // On successful login, select first space and first project (if any), no task
+            loginModalOpen = false;
+            loginEmail = '';
+            loginPassword = '';
+            loginError = '';
+            // Wait for spaces to load, then select first
+			setTimeout(() => {
+				const spacesArr = get(spaces);
+				if (spacesArr && spacesArr.length > 0) {
+					selectedSpaceId = spacesArr[0].id;
+					localStorage.setItem('selectedSpaceId', selectedSpaceId);
+					fetchProjects(selectedSpaceId).then(() => {
+						const projectsArr = get(projectsStore);
+						if (projectsArr && projectsArr.length > 0) {
+							selectedProjectId = projectsArr[0].id;
+							selectedProjectIds = new Set([selectedProjectId]);
+							localStorage.setItem('selectedProjectId', selectedProjectId);
+							// Do not select a task
+							selectedTaskId = null;
+							localStorage.removeItem('selectedTaskId');
+							tasks.set([]);
+							taskItems.set([]);
+						} else {
+							selectedProjectId = null;
+							selectedProjectIds = new Set();
+							localStorage.removeItem('selectedProjectId');
+							selectedTaskId = null;
+							localStorage.removeItem('selectedTaskId');
+							tasks.set([]);
+							taskItems.set([]);
+						}
+					});
+				} else {
+					selectedSpaceId = null;
+					localStorage.removeItem('selectedSpaceId');
+					selectedProjectId = null;
+					selectedProjectIds = new Set();
+					localStorage.removeItem('selectedProjectId');
+					selectedTaskId = null;
+					localStorage.removeItem('selectedTaskId');
+					tasks.set([]);
+					taskItems.set([]);
+				}
+			}, 0);
+        }
+    }
 }
+
+
 function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword = ''; loginError = ''; changePasswordMode = false; registerMode = false; }
 
 	let { children } = $props();
@@ -382,21 +433,27 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 		setTimeout(() => scrollTerminalToBottom(), 0);
 	}
 
-	// (duplicate removed)
 	function logout() {
-		supabase.auth.signOut();
-		user = null;
-		loggedIn = false;
-	// projects = []; // now handled by store
-		tasks.set([]);
-		taskItems.set([]);
-		terminalBlurred = true;
-		terminalLines = [
-			...terminalLines.map(l => ({ ...l, blurred: true })),
-			{ text: 'Logged out.', type: 'info', blurred: false }
-		];
-		// Keep terminal input enabled so user can type login again
-	}
+    supabase.auth.signOut();
+    user = null;
+    loggedIn = false;
+    // Clear all selection state from localStorage and variables
+    localStorage.removeItem('selectedSpaceId');
+    localStorage.removeItem('selectedProjectId');
+    localStorage.removeItem('selectedTaskId');
+    selectedSpaceId = null;
+    selectedProjectId = null;
+    selectedProjectIds = new Set();
+    selectedTaskId = null;
+    tasks.set([]);
+    taskItems.set([]);
+    terminalBlurred = true;
+    terminalLines = [
+        ...terminalLines.map(l => ({ ...l, blurred: true })),
+        { text: 'Logged out.', type: 'info', blurred: false }
+    ];
+    // Keep terminal input enabled so user can type login again
+}
 
 	// ...existing code...
 	// Move fetchUserData above its first usage to fix TS error
@@ -520,8 +577,8 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 				onCancel={() => { closeLogin(); registerMode = false; }}
 				onRegister={() => { registerMode = true; loginError = ''; }}
 			/>
+			<StatusBar {loggedIn} {user} projects={$projectsStore} tasks={$tasks} taskItems={$taskItems} />
 		</div>
 	</div>
-	<!-- Status Bar -->
-	<StatusBar {loggedIn} {user} projects={$projectsStore} tasks={$tasks} taskItems={$taskItems} />
+<!-- Close main layout container -->
 </div>

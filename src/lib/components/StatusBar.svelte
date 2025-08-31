@@ -4,6 +4,19 @@ export let user: { email: string; username: string } | null = null;
 export let projects: any[] = [];
 export let tasks: any[] = [];
 export let taskItems: any[] = [];
+
+import { onMount } from 'svelte';
+let isLight = true;
+import { tick } from 'svelte';
+onMount(() => {
+  document.documentElement.setAttribute('data-theme', 'emerald');
+  isLight = true;
+});
+function toggleTheme(e: Event) {
+  isLight = (e.target as HTMLInputElement).checked;
+  document.documentElement.setAttribute('data-theme', isLight ? 'emerald' : 'night');
+}
+
 </script>
 
 <footer class="h-7 bg-base-300 text-base-content flex items-center px-4 text-xs border-t border-base-200 select-none">
@@ -18,5 +31,9 @@ export let taskItems: any[] = [];
     <span class="mr-4">UTF-8</span>
     <span class="mr-4">Git: main</span>
   {/if}
-  <span class="ml-auto">Emerald Light Mode</span>
+
+  <span class="ml-auto flex items-center gap-2">
+  <input type="checkbox" class="toggle toggle-xs" id="theme-toggle" checked={isLight} on:change={toggleTheme} />
+  <label for="theme-toggle" class="cursor-pointer select-none">{isLight ? 'Light Mode' : 'Dark Mode'}</label>
+  </span>
 </footer>
