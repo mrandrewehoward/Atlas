@@ -56,7 +56,12 @@ onMount(() => {
 			};
 			tasks.set([]);
 			loggedIn = true;
-			await fetchUserData();
+			// Only fetch items for selected task
+			if (selectedTaskId) {
+				await fetchTaskItems(selectedTaskId);
+			} else {
+				taskItems.set([]);
+			}
 		}
 		// Listen for auth state changes
 		supabase.auth.onAuthStateChange((_event: any, session: any) => {
@@ -66,7 +71,11 @@ onMount(() => {
 					username: session.user.user_metadata?.username ?? session.user.email?.split('@')[0] ?? ""
 				};
 				loggedIn = true;
-				fetchUserData();
+				if (selectedTaskId) {
+					fetchTaskItems(selectedTaskId);
+				} else {
+					taskItems.set([]);
+				}
 			} else {
 				user = null;
 				loggedIn = false;
