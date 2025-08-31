@@ -1,9 +1,12 @@
 
+
 <script lang="ts">
+// ...existing code...
+
 import { onMount, createEventDispatcher } from 'svelte';
 import { spaces, spacesLoading, spacesError, fetchSpaces } from '../stores/spaces';
 import type { Space } from '../types';
-
+import { supabase } from '../supabaseClient';
 
 export let selectedId: string | null = null;
 const dispatch = createEventDispatcher();
@@ -31,6 +34,19 @@ function addSpace() {
   newSpaceName = '';
 }
 
+async function updateSpaceName(space: Space) {
+  if (!space.name.trim()) return;
+  const { error } = await supabase
+    .from('spaces')
+    .update({ name: space.name })
+    .eq('id', space.id);
+  if (!error) {
+    fetchSpaces();
+  } else {
+    // Optionally show a toast or error
+    console.error('Failed to update space:', error.message);
+  }
+}
 </script>
 
 <section class="flex flex-col h-full px-2 py-3 relative">
@@ -81,8 +97,18 @@ function addSpace() {
           <ul class="flex flex-col gap-2 mb-4">
             {#each $spaces as space (space.id)}
               <li class="flex items-center gap-2">
-                <input class="input input-sm flex-1 border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1" type="text" bind:value={space.name} aria-label="Edit space name" />
-                <button class="btn btn-xs btn-primary" aria-label="Save" title="Save">💾</button>
+                <form class="flex-1" on:submit|preventDefault={() => updateSpaceName(space)}>
+                  <input
+                    class="input input-sm w-full border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1"
+                    type="text"
+                    bind:value={space.name}
+                    aria-label="Edit space name"
+                    on:keydown={(e) => {
+                      const input = e.target as HTMLInputElement;
+                      if (e.key === 'Enter' && input.form) input.form.requestSubmit();
+                    }}
+                  />
+                </form>
               </li>
             {/each}
           </ul>

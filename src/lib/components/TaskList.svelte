@@ -1,9 +1,9 @@
 <script lang="ts">
-  export let tasks: Array<{ id: number; name: string; priority?: string; status?: string }> = [];
-  export let selectedId: number | null = null;
-  export let onEdit: (id: number) => void = () => {};
-  export let onDelete: (id: number) => void = () => {};
-  export let onToggle: (id: number) => void = () => {};
+  export let tasks: Array<{ id: string; name: string; priority?: string; status?: string }> = [];
+  export let selectedId: string | null = null;
+  export let onEdit: (id: string) => void = () => {};
+  export let onDelete: (id: string) => void = () => {};
+  export let onToggle: (id: string) => void = () => {};
   export let loading: boolean = false;
   export let error: string = '';
 </script>

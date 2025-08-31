@@ -119,7 +119,6 @@ import { taskItems, taskItemsLoading, taskItemsError, fetchTaskItems } from '$li
 function handleToggleProject(id: string) {
 	if (selectedProjectIds.has(id)) {
 		selectedProjectIds.delete(id);
-		// If deselecting the currently selected project, clear tasks
 		if (selectedProjectId === id) {
 			selectedProjectId = null;
 			tasks.set([]);
@@ -132,7 +131,6 @@ function handleToggleProject(id: string) {
 		selectedProjectId = id;
 		fetchTasks(id);
 		localStorage.setItem('selectedProjectId', id);
-		// Clear task selection when project changes
 		selectedTaskId = null;
 		localStorage.removeItem('selectedTaskId');
 	}
@@ -152,9 +150,8 @@ function handleToggleTask(id: string) {
 }
 function handleSelectSpace(id: string) {
 	selectedSpaceId = id;
-	localStorage.setItem('selectedSpaceId', String(id));
+	localStorage.setItem('selectedSpaceId', id);
 	fetchProjects(id);
-	// Clear project and task selection when space changes
 	selectedProjectId = null;
 	selectedProjectIds = new Set();
 	localStorage.removeItem('selectedProjectId');
@@ -179,13 +176,13 @@ onMount(() => {
 				console.log('[Atlas] Restoring project:', id);
 				selectedProjectId = id;
 				selectedProjectIds.add(id);
-								fetchTasks(id).then(() => {
-									if (storedTaskId) {
-										selectedTaskId = storedTaskId;
-										console.log('[Atlas] Restoring task:', selectedTaskId);
-										fetchTaskItems(storedTaskId);
-									}
-								});
+				fetchTasks(id).then(() => {
+					if (storedTaskId) {
+						selectedTaskId = storedTaskId;
+						console.log('[Atlas] Restoring task:', selectedTaskId);
+						fetchTaskItems(storedTaskId);
+					}
+				});
 				selectedProjectIds = new Set(selectedProjectIds);
 			}
 		});
@@ -435,7 +432,7 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	<!-- Main layout row: Activity bar, sidebar, main, panel -->
 	<div class="flex flex-1 min-h-0">
 		<!-- Activity Bar -->
-		<SpaceSelector selectedId={selectedSpaceId} on:select={e => handleSelectSpace(e.detail)} />
+			<SpaceSelector selectedId={selectedSpaceId} on:select={e => handleSelectSpace(e.detail)} />
 		<!-- Primary Side Bar (Accordion) -->
 		<aside class="bg-base-100 border-r border-base-300 shadow-sm w-60 min-w-60 flex flex-col">
 			<div class="flex flex-col flex-1">
@@ -446,14 +443,14 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 							Select a space to continue
 						</div>
 					{:else}
-						<ProjectList
-							projects={$projectsStore}
-							selectedProjectIds={selectedProjectIds}
-							selectedId={selectedProjectId}
-							onToggleProject={handleToggleProject}
-							loading={$projectsLoading}
-							error={$projectsError}
-						/>
+							<ProjectList
+								projects={$projectsStore}
+								selectedProjectIds={selectedProjectIds}
+								selectedId={selectedProjectId}
+								onToggleProject={handleToggleProject}
+								loading={$projectsLoading}
+								error={$projectsError}
+							/>
 					{/if}
 					<div class="flex-1"></div>
 					{#if !loggedIn}
@@ -470,15 +467,15 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 			<div class="flex-1 flex flex-col min-w-0">
 				<div class="flex flex-1 min-h-0 gap-0 relative">
 					<section class="flex-1 min-w-0 border-r border-base-300 bg-base-100 flex flex-col p-0">
-						<TaskList
-							tasks={$tasks}
-							selectedId={selectedTaskId}
-							onEdit={() => {}}
-							onDelete={() => {}}
-							onToggle={handleToggleTask}
-							loading={$tasksLoading}
-							error={$tasksError}
-						/>
+							<TaskList
+								tasks={$tasks}
+								selectedId={selectedTaskId}
+								onEdit={() => {}}
+								onDelete={() => {}}
+								onToggle={handleToggleTask}
+								loading={$tasksLoading}
+								error={$tasksError}
+							/>
 					</section>
 								<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
 									<TaskItemList
@@ -526,5 +523,5 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 		</div>
 	</div>
 	<!-- Status Bar -->
-	<StatusBar {loggedIn} {user} projects={$projectsStore} tasks={$tasks} {taskItems} />
+	<StatusBar {loggedIn} {user} projects={$projectsStore} tasks={$tasks} taskItems={$taskItems} />
 </div>

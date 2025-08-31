@@ -5,7 +5,7 @@ export const tasks = writable([]);
 export const tasksLoading = writable(false);
 export const tasksError = writable('');
 
-export async function fetchTasks(projectId: number) {
+export async function fetchTasks(projectId: string) {
   console.log('[Atlas] fetchTasks called with projectId:', projectId);
   tasksLoading.set(true);
   tasksError.set('');

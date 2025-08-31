@@ -1,8 +1,8 @@
 <script lang="ts">
-  export let projects: Array<{ id: number; name: string; icon?: string; color?: string; priority?: string }> = [];
-  export let selectedProjectIds: Set<number> | number[] = [];
-  export let selectedId: number | null = null;
-  export let onToggleProject: (id: number) => void = () => {};
+  export let projects: Array<{ id: string; name: string; icon?: string; color?: string; priority?: string }> = [];
+  export let selectedProjectIds: Set<string> | string[] = [];
+  export let selectedId: string | null = null;
+  export let onToggleProject: (id: string) => void = () => {};
   export let loading: boolean = false;
   export let error: string = '';
 </script>
