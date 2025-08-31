@@ -1,5 +1,4 @@
 <script lang="ts">
-import favicon from '$lib/assets/favicon.ico';
 import '../app.css';
 import ProjectList from '$lib/components/ProjectList.svelte';
 import TaskList from '$lib/components/TaskList.svelte';
@@ -55,6 +54,7 @@ onMount(() => {
 				email: session.user.email ?? "",
 				username: session.user.user_metadata?.username ?? session.user.email?.split('@')[0] ?? ""
 			};
+			tasks.set([]);
 			loggedIn = true;
 			await fetchUserData();
 		}
@@ -71,8 +71,8 @@ onMount(() => {
 				user = null;
 				loggedIn = false;
 				// projects = []; // now handled by store
-				tasks = [];
-				taskItems = [];
+				tasks.set([]);
+				taskItems.set([]);
 			}
 		});
 	})();
@@ -97,25 +97,104 @@ onMount(() => {
 });
 // Stubs for missing props/vars for layout to compile
 
-let selectedSpaceId = $state(null);
-let selectedProjectIds = $state(new Set<number>());
 
-function handleToggleProject(id: number) {
+let selectedSpaceId = $state<string|null>(null);
+let selectedProjectIds = $state(new Set<string>());
+let selectedProjectId = $state<string|null>(null);
+let selectedTaskId = $state<string|null>(null);
+
+
+import { tasks, tasksLoading, tasksError, fetchTasks } from '$lib/stores/tasks';
+import { taskItems, taskItemsLoading, taskItemsError, fetchTaskItems } from '$lib/stores/taskItems';
+
+function handleToggleProject(id: string) {
 	if (selectedProjectIds.has(id)) {
 		selectedProjectIds.delete(id);
+		// If deselecting the currently selected project, clear tasks
+		if (selectedProjectId === id) {
+			selectedProjectId = null;
+			tasks.set([]);
+			localStorage.removeItem('selectedProjectId');
+			selectedTaskId = null;
+			localStorage.removeItem('selectedTaskId');
+		}
 	} else {
 		selectedProjectIds.add(id);
+		selectedProjectId = id;
+		fetchTasks(id);
+		localStorage.setItem('selectedProjectId', id);
+		// Clear task selection when project changes
+		selectedTaskId = null;
+		localStorage.removeItem('selectedTaskId');
 	}
-	// Force reactivity for Set
 	selectedProjectIds = new Set(selectedProjectIds);
+}
+
+function handleToggleTask(id: string) {
+	if (selectedTaskId === id) {
+		selectedTaskId = null;
+		localStorage.removeItem('selectedTaskId');
+		taskItems.set([]);
+	} else {
+		selectedTaskId = id;
+		localStorage.setItem('selectedTaskId', id);
+		fetchTaskItems(id);
+	}
 }
 function handleSelectSpace(id: string) {
 	selectedSpaceId = id;
+	localStorage.setItem('selectedSpaceId', String(id));
 	fetchProjects(id);
+	// Clear project and task selection when space changes
+	selectedProjectId = null;
+	selectedProjectIds = new Set();
+	localStorage.removeItem('selectedProjectId');
+	selectedTaskId = null;
+	localStorage.removeItem('selectedTaskId');
+	tasks.set([]);
 }
 
+import { get } from 'svelte/store';
 onMount(() => {
+	console.log('[Atlas] onMount: restoring selection from localStorage');
+	// Restore selected space, project, and task from localStorage
+	const storedSpaceId = localStorage.getItem('selectedSpaceId');
+	const storedProjectId = localStorage.getItem('selectedProjectId');
+	const storedTaskId = localStorage.getItem('selectedTaskId');
+	if (storedSpaceId) {
+		console.log('[Atlas] Restoring space:', storedSpaceId);
+		selectedSpaceId = storedSpaceId;
+		fetchProjects(storedSpaceId).then(() => {
+			if (storedProjectId) {
+				const id = storedProjectId;
+				console.log('[Atlas] Restoring project:', id);
+				selectedProjectId = id;
+				selectedProjectIds.add(id);
+								fetchTasks(id).then(() => {
+									if (storedTaskId) {
+										selectedTaskId = storedTaskId;
+										console.log('[Atlas] Restoring task:', selectedTaskId);
+										fetchTaskItems(storedTaskId);
+									}
+								});
+				selectedProjectIds = new Set(selectedProjectIds);
+			}
+		});
+	}
 	fetchSpaces();
+
+		// Fallback: if a project is selected but tasks are empty and not loading, fetch tasks
+		setTimeout(() => {
+			if (selectedProjectId && get(tasks).length === 0 && !get(tasksLoading)) {
+				console.log('[Atlas] Fallback: fetching tasks for project', selectedProjectId);
+				fetchTasks(selectedProjectId);
+			}
+			// Fallback: if a task is selected but taskItems are empty and not loading, fetch taskItems
+			if (selectedTaskId && get(taskItems).length === 0 && !get(taskItemsLoading)) {
+				console.log('[Atlas] Fallback: fetching task items for task', selectedTaskId);
+				fetchTaskItems(selectedTaskId);
+			}
+		}, 0);
 });
 let sidebarSection = $state('');
 
@@ -169,8 +248,8 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	let user: { email: string; username: string } | null = $state(null); // { email, username }
 	let loginError = $state('');
 	// let projects: any[] = $state([]); // removed, now using store
-	let tasks: any[] = $state([]);
-	let taskItems: any[] = $state([]);
+	// let tasks: any[] = $state([]); // removed, now using store
+	// let taskItems: any[] = $state([]); // removed, now using store
 	let terminalOpen = $state(true);
 	let terminalInput = $state('');
 	let terminalLines = $state([
@@ -303,8 +382,8 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 		user = null;
 		loggedIn = false;
 	// projects = []; // now handled by store
-		tasks = [];
-		taskItems = [];
+		tasks.set([]);
+		taskItems.set([]);
 		terminalBlurred = true;
 		terminalLines = [
 			...terminalLines.map(l => ({ ...l, blurred: true })),
@@ -318,13 +397,11 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	async function fetchUserData() {
 		// Fetch projects
 		const { data: projectsData } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-	// projects = projectsData || []; // now handled by store
-		// Fetch tasks
-		const { data: tasksData } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
-		tasks = tasksData || [];
-		// Fetch task items
+		// projects = projectsData || []; // now handled by store
+		// Do NOT fetch all tasks globally here; tasks are loaded per project
+		// Fetch task items (if needed globally)
 		const { data: itemsData } = await supabase.from('items').select('*').order('created_at', { ascending: false });
-		taskItems = itemsData || [];
+		taskItems.set(itemsData || []);
 	}
 
 	function scrollTerminalToBottom() {
@@ -337,8 +414,9 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 
 
 <svelte:head>
-	<link rel="icon" href={favicon} type="image/x-icon" />
+	<link rel="icon" href="/favicon.ico" type="image/x-icon" />
 </svelte:head>
+
 
 
 <div class="min-h-screen flex flex-col bg-base-200">
@@ -348,7 +426,7 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	<!-- Main layout row: Activity bar, sidebar, main, panel -->
 	<div class="flex flex-1 min-h-0">
 		<!-- Activity Bar -->
-				<SpaceSelector on:select={e => handleSelectSpace(e.detail)} />
+		<SpaceSelector selectedId={selectedSpaceId} on:select={e => handleSelectSpace(e.detail)} />
 		<!-- Primary Side Bar (Accordion) -->
 		<aside class="bg-base-100 border-r border-base-300 shadow-sm w-60 min-w-60 flex flex-col">
 			<div class="flex flex-col flex-1">
@@ -362,6 +440,7 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 						<ProjectList
 							projects={$projectsStore}
 							selectedProjectIds={selectedProjectIds}
+							selectedId={selectedProjectId}
 							onToggleProject={handleToggleProject}
 							loading={$projectsLoading}
 							error={$projectsError}
@@ -382,26 +461,27 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 			<div class="flex-1 flex flex-col min-w-0">
 				<div class="flex flex-1 min-h-0 gap-0 relative">
 					<section class="flex-1 min-w-0 border-r border-base-300 bg-base-100 flex flex-col p-0">
-												<TaskList
-													tasks={tasks}
-													onEdit={() => {}}
-													onDelete={() => {}}
-													onToggle={() => {}}
-													loading={false}
-													error={''}
-												/>
+						<TaskList
+							tasks={$tasks}
+							selectedId={selectedTaskId}
+							onEdit={() => {}}
+							onDelete={() => {}}
+							onToggle={handleToggleTask}
+							loading={$tasksLoading}
+							error={$tasksError}
+						/>
 					</section>
-					<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
-												<TaskItemList
-													items={taskItems}
-													onEdit={() => {}}
-													onDelete={() => {}}
-													onToggle={() => {}}
-													loading={false}
-													error={''}
-												/>
-						<!-- {@render children()} -->
-					</section>
+								<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
+									<TaskItemList
+										items={$taskItems}
+										onEdit={() => {}}
+										onDelete={() => {}}
+										onToggle={() => {}}
+										loading={$taskItemsLoading}
+										error={$taskItemsError}
+									/>
+									<!-- {@render children()} -->
+								</section>
 					{#if !loggedIn}
 						<div class="absolute inset-0 z-20 flex items-center justify-center bg-base-100/80">
 							<button class="btn btn-primary btn-lg" onclick={() => openLogin(false)}>Sign in to view your workspace</button>
@@ -437,5 +517,5 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 		</div>
 	</div>
 	<!-- Status Bar -->
-	<StatusBar {loggedIn} {user} projects={$projectsStore} {tasks} {taskItems} />
+	<StatusBar {loggedIn} {user} projects={$projectsStore} tasks={$tasks} {taskItems} />
 </div>
