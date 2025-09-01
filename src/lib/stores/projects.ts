@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import { supabase } from '../supabaseClient';
+import type { Project } from '../types';
 
 export const projects = writable([]);
 export const projectsLoading = writable(false);
@@ -35,4 +36,40 @@ export async function fetchProjects(spaceId: string) {
     projects.set(arr);
   }
   projectsLoading.set(false);
+}
+
+export async function addProject(spaceId: string, name: string, order?: number, color?: string, icon?: string) {
+  if (!spaceId || !name.trim()) return;
+  const { error } = await supabase
+    .from('projects')
+    .insert([{ space_id: spaceId, name: name.trim(), order, color, icon }]);
+  if (!error) {
+    fetchProjects(spaceId);
+  } else {
+    projectsError.set(error.message);
+  }
+}
+
+export async function updateProject(project: Project, updates: Partial<Project>) {
+  const { error } = await supabase
+    .from('projects')
+    .update(updates)
+    .eq('id', project.id);
+  if (!error) {
+    fetchProjects(project.space_id);
+  } else {
+    projectsError.set(error.message);
+  }
+}
+
+export async function deleteProject(project: Project) {
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', project.id);
+  if (!error) {
+    fetchProjects(project.space_id);
+  } else {
+    projectsError.set(error.message);
+  }
 }

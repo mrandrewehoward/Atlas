@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import { supabase } from '../supabaseClient';
+import type { Item } from '../types';
 
 export const taskItems = writable([]);
 export const taskItemsLoading = writable(false);
@@ -37,4 +38,40 @@ export async function fetchTaskItems(taskId: string) {
     taskItems.set(arr);
   }
   taskItemsLoading.set(false);
+}
+
+export async function addTaskItem(taskId: string, name: string, order?: number, description?: string, status?: string, priority?: string) {
+  if (!taskId || !name.trim()) return;
+  const { error } = await supabase
+    .from('items')
+    .insert([{ task_id: taskId, name: name.trim(), order, description, status, priority }]);
+  if (!error) {
+    fetchTaskItems(taskId);
+  } else {
+    taskItemsError.set(error.message);
+  }
+}
+
+export async function updateTaskItem(item: Item, updates: Partial<Item>) {
+  const { error } = await supabase
+    .from('items')
+    .update(updates)
+    .eq('id', item.id);
+  if (!error) {
+    fetchTaskItems(item.task_id);
+  } else {
+    taskItemsError.set(error.message);
+  }
+}
+
+export async function deleteTaskItem(item: Item) {
+  const { error } = await supabase
+    .from('items')
+    .delete()
+    .eq('id', item.id);
+  if (!error) {
+    fetchTaskItems(item.task_id);
+  } else {
+    taskItemsError.set(error.message);
+  }
 }

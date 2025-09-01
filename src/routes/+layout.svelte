@@ -17,49 +17,9 @@ import { projects as projectsStore, projectsLoading, projectsError, fetchProject
 import { onMount } from 'svelte';
 import { toastStore } from '$lib/stores/toast';
 import type { Space } from '$lib/types';
-
-// --- CLI Space Management Functions ---
-async function addSpace(name: string) {
-	if (!name.trim()) return;
-	const { error } = await supabase
-		.from('spaces')
-		.insert([{ name: name.trim() }]);
-	if (!error) {
-		fetchSpaces();
-		toastStore.show('Space added!', 'success');
-	} else {
-		toastStore.show('Failed to add space', 'error');
-		console.error('Failed to add space:', error.message);
-	}
-}
-
-async function deleteSpace(space: Space) {
-	const { error } = await supabase
-		.from('spaces')
-		.delete()
-		.eq('id', space.id);
-	if (!error) {
-		fetchSpaces();
-		toastStore.show('Space deleted!', 'success');
-	} else {
-		toastStore.show('Failed to delete space', 'error');
-		console.error('Failed to delete space:', error.message);
-	}
-}
-
-async function updateSpace(space: Space, updates: Partial<Space>) {
-	const { error } = await supabase
-		.from('spaces')
-		.update(updates)
-		.eq('id', space.id);
-	if (!error) {
-		fetchSpaces();
-		toastStore.show('Space updated', 'success');
-	} else {
-		toastStore.show('Failed to update space', 'error');
-		console.error('Failed to update space:', error.message);
-	}
-}
+import { addSpace, deleteSpace, updateSpace } from '$lib/stores/spaces';
+import { registerCliHandler } from '$lib/cli/cliParser';
+import { spacesCliHandler } from '$lib/cli/spacesCliHandler';
 
 // Universal CLI fun/utility messages (moved to module scope)
 const motds = [
@@ -634,6 +594,8 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 		}
 		terminalLines = [...terminalLines, { text: 'Unknown /spaces command. Type /spaces -h for help.', type: 'error', blurred: false }];
 	}
+
+registerCliHandler('spaces', spacesCliHandler);
 </script>
 
 

@@ -23,3 +23,39 @@ export async function fetchSpaces() {
   }
   spacesLoading.set(false);
 }
+
+export async function addSpace(name: string) {
+  if (!name.trim()) return;
+  const { error } = await supabase
+    .from('spaces')
+    .insert([{ name: name.trim() }]);
+  if (!error) {
+    fetchSpaces();
+  } else {
+    console.error('Failed to add space:', error.message);
+  }
+}
+
+export async function deleteSpace(space: Space) {
+  const { error } = await supabase
+    .from('spaces')
+    .delete()
+    .eq('id', space.id);
+  if (!error) {
+    fetchSpaces();
+  } else {
+    console.error('Failed to delete space:', error.message);
+  }
+}
+
+export async function updateSpace(space: Space, updates: Partial<Space>) {
+  const { error } = await supabase
+    .from('spaces')
+    .update(updates)
+    .eq('id', space.id);
+  if (!error) {
+    fetchSpaces();
+  } else {
+    console.error('Failed to update space:', error.message);
+  }
+}
