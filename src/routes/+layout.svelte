@@ -406,18 +406,22 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 			return;
 		}
 
-		// --- CLI mode routing ---
-		if (cliMode === 'spaces') {
-			// Exit mode if user types back/exit
-			if (cmdLower === 'back' || cmdLower === 'exit') {
-				cliMode = null;
-				terminalLines = [...terminalLines, { text: 'Exited /spaces mode.', type: 'info', blurred: false }];
-			} else {
-				handleSpacesCommand(cmd);
+		// --- CLI context stack routing ---
+		if (cliContextStack.length > 0) {
+			const ctx = cliContextStack[cliContextStack.length - 1];
+			if (ctx.mode === 'spaces') {
+				// If user types back/exit, pop context
+				if (cmdLower === 'back' || cmdLower === 'exit') {
+					popCliContext();
+					terminalLines = [...terminalLines, { text: 'Exited /spaces mode.', type: 'info', blurred: false }];
+				} else {
+					handleSpacesCommand(cmd, ctx);
+				}
+				terminalInput = '';
+				setTimeout(() => scrollTerminalToBottom(), 0);
+				return;
 			}
-			terminalInput = '';
-			setTimeout(() => scrollTerminalToBottom(), 0);
-			return;
+			// Future: handle other entity modes (projects, tasks, etc.)
 		}
 
 		// Universal CLI commands
@@ -447,58 +451,12 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 				type: 'info', blurred: false }];
 		} else if (cmdLower.startsWith('/spaces')) {
 			// Enter spaces mode
-			cliMode = 'spaces';
+			pushCliContext('spaces');
 			terminalLines = [...terminalLines, { text: 'Entered /spaces mode. Type "back" or "exit" to leave.', type: 'info', blurred: false }];
-			// If there are subcommands, run them immediately
 			const rest = cmd.replace(/^\/spaces\s*/i, '').trim();
-			if (rest) handleSpacesCommand(rest);
-		} else if (cmdLower === '/datetime') {
-			terminalLines = [...terminalLines, { text: new Date().toLocaleString(), type: 'info', blurred: false }];
-		} else if (cmdLower === '/cls' || cmdLower === 'cls') {
-			terminalLines = [{ text: getTerminalWelcome(), type: 'info', blurred: false }];
-		} else if (cmdLower === '/whoami') {
-			if (user && loggedIn) {
-				terminalLines = [...terminalLines, { text: `User: ${user.username} (${user.email})`, type: 'info', blurred: false }];
-			} else {
-				terminalLines = [...terminalLines, { text: 'Not logged in.', type: 'info', blurred: false }];
-			}
-		} else if (cmdLower === '/motd') {
-			terminalLines = [...terminalLines, { text: getRandom(motds), type: 'info', blurred: false }];
-		} else if (cmdLower === '/fortune') {
-			terminalLines = [...terminalLines, { text: getRandom(fortunes), type: 'info', blurred: false }];
-		} else if (cmdLower.startsWith('/echo ')) {
-			terminalLines = [...terminalLines, { text: cmd.slice(6), type: 'info', blurred: false }];
-		} else if (cmdLower === '/about') {
-			terminalLines = [...terminalLines, { text: 'Atlas Workbench: Modular, modern, and fun. Built with SvelteKit 5, Tailwind v4, DaisyUI 5, and Supabase.', type: 'info', blurred: false }];
-		} else if (cmdLower === '/version') {
-			terminalLines = [...terminalLines, { text: 'Atlas version 0.1.1', type: 'info', blurred: false }];
-		} else if (cmdLower === '/theme') {
-			terminalLines = [...terminalLines, { text: 'Theme switching coming soon!', type: 'info', blurred: false }];
-		// System commands (login state aware)
-		} else if (!loggedIn) {
-			if (cmdLower === 'login' || cmdLower === '/login') {
-				terminalLines = [...terminalLines, { text: 'Enter credentials.', type: 'info', blurred: false }];
-				openLogin();
-			} else {
-				terminalLines = [...terminalLines, { text: 'Unknown command.', type: 'error', blurred: false }];
-			}
+			if (rest) handleSpacesCommand(rest, cliContextStack[cliContextStack.length - 1]);
 		} else {
-			if (cmdLower === 'login' || cmdLower === '/login') {
-				terminalLines = [...terminalLines, { text: 'You are already logged in. Do you want to change your password? (y/n)', type: 'info', blurred: false }];
-				awaitingPasswordChangeConfirm = true;
-			} else if (cmdLower === 'logout' || cmdLower === '/logout') {
-				logout();
-			} else if (cmdLower === '/tasks -help' || cmdLower === '/tasks --help') {
-				terminalLines = [...terminalLines, {
-					text: '/tasks usage:\n/tasks - List all your tasks\n/tasks -help - Show this help message',
-					type: 'info', blurred: false }];
-			} else if (cmdLower === '/tasks') {
-				terminalLines = [...terminalLines, {
-					text: 'Tasks command coming soon! (This will list your tasks.)',
-					type: 'info', blurred: false }];
-			} else {
-				terminalLines = [...terminalLines, { text: 'Unknown command.', type: 'error', blurred: false }];
-			}
+			terminalLines = [...terminalLines, { text: 'Unknown command.', type: 'error', blurred: false }];
 		}
 		terminalInput = '';
 		setTimeout(() => scrollTerminalToBottom(), 0);
@@ -542,156 +500,129 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 		if (el) el.scrollTop = el.scrollHeight;
 	}
 
+	// --- CLI context stack for drill-down navigation ---
+	// Each stack frame: { mode: string, data?: any }
+	let cliContextStack: Array<{ mode: string, data?: any }> = [];
+
+	function pushCliContext(mode: string, data?: any) {
+		cliContextStack.push({ mode, data });
+		cliMode = mode as any;
+	}
+	function popCliContext() {
+		cliContextStack.pop();
+		cliMode = cliContextStack.length > 0 ? cliContextStack[cliContextStack.length - 1].mode as any : null;
+	}
+	function resetCliContext() {
+		cliContextStack = [];
+		cliMode = null;
+	}
+
 	// --- /spaces command dispatcher ---
-	function handleSpacesCommand(cmd: string) {
-    // Remove leading /spaces (case-insensitive)
-    const rest = cmd.replace(/^\/spaces\s*/i, '').trim();
-    // Help
-    if (rest === '-h' || rest === '--help' || rest === 'help') {
-        terminalLines = [...terminalLines, {
-            text:
-`/spaces area commands:\n\nls - List all spaces\nsel n - Select space by number\nfields - List fields for selected space\nedit n [value] - Edit field n (prompt or direct)\nadd - Add a new space (prompts for fields)\nadd -d "Title" - Add a new space with name/title\norder n up/down - Move space n up or down\ndel n - Delete space n (confirmation)\nstats n - Show stats/details for space n\nedit "Name" -set "NewName" - Edit by name, set name\nedit "Name" -o 2 - Edit by name, set order\nsearch term - Search spaces\nback - Return to top\nexit - Exit terminal\n\nAll commands are case-insensitive. See docs/cli-commands.md for full reference.`,
-            type: 'info', blurred: false }];
-        return;
-    }
-    // Parse subcommands
-    const args = rest.match(/(?:"[^"]*"|[^\s"]+)/g) || [];
-    if (args.length === 0 || args[0].toLowerCase() === 'ls') {
-        // List spaces
-        const spacesArr = get(spaces);
-        if (!spacesArr || spacesArr.length === 0) {
-            terminalLines = [...terminalLines, { text: 'No spaces found.', type: 'info', blurred: false }];
-            return;
-        }
-        let out = 'Spaces:\n';
-        spacesArr.forEach((s, i) => {
-            out += `${i + 1}. ${s.name} (order: ${s.order ?? '-'})\n`;
-        });
-        terminalLines = [...terminalLines, { text: out.trim(), type: 'info', blurred: false }];
-        return;
-    }
-    // sel n
-    if (args[0].toLowerCase() === 'sel' && args[1]) {
-        const n = parseInt(args[1]);
-        const spacesArr = get(spaces);
-        if (!spacesArr || isNaN(n) || n < 1 || n > spacesArr.length) {
-            terminalLines = [...terminalLines, { text: 'Invalid space number.', type: 'error', blurred: false }];
-            return;
-        }
-        selectedSpaceId = spacesArr[n - 1].id;
-        localStorage.setItem('selectedSpaceId', selectedSpaceId);
-        terminalLines = [...terminalLines, { text: `Selected: ${spacesArr[n - 1].name}`, type: 'success', blurred: false }];
-        return;
-    }
-    // fields
-    if (args[0].toLowerCase() === 'fields') {
-        const spacesArr = get(spaces);
-        const sel = spacesArr.find(s => s.id === selectedSpaceId);
-        if (!sel) {
-            terminalLines = [...terminalLines, { text: 'No space selected.', type: 'error', blurred: false }];
-            return;
-        }
-        let out = 'Fields:\n1. name\n2. order';
-        terminalLines = [...terminalLines, { text: out, type: 'info', blurred: false }];
-        return;
-    }
-    // edit n [value]
-    if (args[0].toLowerCase() === 'edit' && args[1]) {
-        const spacesArr = get(spaces);
-        const sel = spacesArr.find(s => s.id === selectedSpaceId);
-        if (!sel) {
-            terminalLines = [...terminalLines, { text: 'No space selected.', type: 'error', blurred: false }];
-            return;
-        }
-        // edit n value
-        const fieldIdx = parseInt(args[1]);
-        if (!isNaN(fieldIdx) && (fieldIdx === 1 || fieldIdx === 2)) {
-            const field = fieldIdx === 1 ? 'name' : 'order';
-            if (args[2]) {
-                // Direct set
-                const value = args.slice(2).join(' ').replace(/^"|"$/g, '');
-                updateSpace(sel, { [field]: field === 'order' ? Number(value) : value });
-                terminalLines = [...terminalLines, { text: `Space ${field} updated to '${value}'`, type: 'success', blurred: false }];
-            } else {
-                // Prompt for value (not implemented: use edit n value)
-                terminalLines = [...terminalLines, { text: `Enter new value for ${field}: [Not implemented: use edit n value]`, type: 'info', blurred: false }];
-            }
-            return;
-        }
-        // edit "Name" -set "NewName" or -o 2
-        if (args[1].startsWith('"') && args[1].endsWith('"')) {
-            const name = args[1].slice(1, -1);
-            const target = spacesArr.find(s => s.name === name);
-            if (!target) {
-                terminalLines = [...terminalLines, { text: `Space '${name}' not found.`, type: 'error', blurred: false }];
-                return;
-            }
-            if (args[2] && (args[2] === '-set' || args[2] === '-n') && args[3]) {
-                const newName = args.slice(3).join(' ').replace(/^"|"$/g, '');
-                updateSpace(target, { name: newName });
-                terminalLines = [...terminalLines, { text: `Space name updated to '${newName}'`, type: 'success', blurred: false }];
-                return;
-            }
-            if (args[2] && args[2] === '-o' && args[3]) {
-                const newOrder = Number(args[3]);
-                if (isNaN(newOrder)) {
-                    terminalLines = [...terminalLines, { text: 'Invalid order value.', type: 'error', blurred: false }];
-                    return;
-                }
-                updateSpace(target, { order: newOrder });
-                terminalLines = [...terminalLines, { text: `Space order updated to ${newOrder}`, type: 'success', blurred: false }];
-                return;
-            }
-        }
-        terminalLines = [...terminalLines, { text: 'Invalid edit command. See /spaces -h.', type: 'error', blurred: false }];
-        return;
-    }
-    // add -d "Title"
-    if (args[0].toLowerCase() === 'add') {
-        if (args[1] && args[1] === '-d' && args[2]) {
-            const title = args.slice(2).join(' ').replace(/^"|"$/g, '');
-            addSpace(title);
-            terminalLines = [...terminalLines, { text: `Space '${title}' added.`, type: 'success', blurred: false }];
-            return;
-        }
-        // Interactive add (not implemented: would require async input mode)
-        terminalLines = [...terminalLines, { text: 'Interactive add not implemented. Use add -d "Title".', type: 'info', blurred: false }];
-        return;
-    }
-    // del n
-    if (args[0].toLowerCase() === 'del' && args[1]) {
-        const n = parseInt(args[1]);
-        const spacesArr = get(spaces);
-        if (!spacesArr || isNaN(n) || n < 1 || n > spacesArr.length) {
-            terminalLines = [...terminalLines, { text: 'Invalid space number.', type: 'error', blurred: false }];
-            return;
-        }
-        deleteSpace(spacesArr[n - 1]);
-        terminalLines = [...terminalLines, { text: `Space '${spacesArr[n - 1].name}' deleted.`, type: 'success', blurred: false }];
-        return;
-    }
-    // order n up/down (not implemented)
-    if (args[0].toLowerCase() === 'order' && args[1] && args[2]) {
-        terminalLines = [...terminalLines, { text: 'Order command not yet implemented.', type: 'info', blurred: false }];
-        return;
-    }
-    // stats n (not implemented)
-    if (args[0].toLowerCase() === 'stats' && args[1]) {
-        terminalLines = [...terminalLines, { text: 'Stats command not yet implemented.', type: 'info', blurred: false }];
-        return;
-    }
-    // search term (not implemented)
-    if (args[0].toLowerCase() === 'search' && args[1]) {
-        terminalLines = [...terminalLines, { text: 'Search command not yet implemented.', type: 'info', blurred: false }];
-        return;
-    }
-    // back/exit
-    if (args[0].toLowerCase() === 'back' || args[0].toLowerCase() === 'exit') {
-        terminalLines = [...terminalLines, { text: 'Returning to top-level prompt.', type: 'info', blurred: false }];
-        return;
-    }
-    terminalLines = [...terminalLines, { text: 'Unknown /spaces command. Type /spaces -h for help.', type: 'error', blurred: false }];
-}
+	function handleSpacesCommand(cmd: string, ctx?: { mode: string, data?: any }) {
+		// Remove leading /spaces (case-insensitive) if present
+		const rest = cmd.replace(/^\/spaces\s*/i, '').trim();
+		const args = rest.match(/(?:"[^"]*"|[^\s"]+)/g) || [];
+		const spacesArr = get(spaces);
+		// Context: top-level (list spaces)
+		if (!ctx?.data || ctx.data.level === 'spaces') {
+			if (args.length === 0 || args[0].toLowerCase() === 'ls') {
+				if (!spacesArr || spacesArr.length === 0) {
+					terminalLines = [...terminalLines, { text: 'No spaces found.', type: 'info', blurred: false }];
+					return;
+				}
+				let out = 'Spaces:\n';
+				spacesArr.forEach((s, i) => {
+					out += `${i + 1}. ${s.name} (order: ${s.order ?? '-'})\n`;
+				});
+				terminalLines = [...terminalLines, { text: out.trim(), type: 'info', blurred: false }];
+				return;
+			}
+			// sel n: drill into space details
+			if (args[0].toLowerCase() === 'sel' && args[1]) {
+				const n = parseInt(args[1]);
+				if (!spacesArr || isNaN(n) || n < 1 || n > spacesArr.length) {
+					terminalLines = [...terminalLines, { text: 'Invalid space number.', type: 'error', blurred: false }];
+					return;
+				}
+				const selected = spacesArr[n - 1];
+				pushCliContext('spaces', { level: 'spaceDetails', space: selected });
+				terminalLines = [...terminalLines, { text: `Selected: ${selected.name}\nType 'fields' to list fields, 'back' to return.`, type: 'success', blurred: false }];
+				return;
+			}
+			// add -d "Title"
+			if (args[0].toLowerCase() === 'add') {
+				if (args[1] && args[1] === '-d' && args[2]) {
+					const title = args.slice(2).join(' ').replace(/^"|"$/g, '');
+					addSpace(title);
+					terminalLines = [...terminalLines, { text: `Space '${title}' added.`, type: 'success', blurred: false }];
+					return;
+				}
+				// Interactive add (not implemented: would require async input mode)
+				terminalLines = [...terminalLines, { text: 'Interactive add not implemented. Use add -d "Title".', type: 'info', blurred: false }];
+				return;
+			}
+			// del n
+			if (args[0].toLowerCase() === 'del' && args[1]) {
+				const n = parseInt(args[1]);
+				if (!spacesArr || isNaN(n) || n < 1 || n > spacesArr.length) {
+					terminalLines = [...terminalLines, { text: 'Invalid space number.', type: 'error', blurred: false }];
+					return;
+				}
+				deleteSpace(spacesArr[n - 1]);
+				terminalLines = [...terminalLines, { text: `Space '${spacesArr[n - 1].name}' deleted.`, type: 'success', blurred: false }];
+				return;
+			}
+		}
+		// Context: spaceDetails (fields)
+		if (ctx?.data?.level === 'spaceDetails') {
+			const space = ctx.data.space;
+			if (args[0].toLowerCase() === 'fields') {
+				let out = 'Fields:\n1. name\n2. order';
+				terminalLines = [...terminalLines, { text: out, type: 'info', blurred: false }];
+				return;
+			}
+			// sel n: select field
+			if (args[0].toLowerCase() === 'sel' && args[1]) {
+				const n = parseInt(args[1]);
+				if (n === 1) {
+					pushCliContext('spaces', { level: 'fieldDetails', space, field: 'name' });
+					terminalLines = [...terminalLines, { text: `Field: name\nCurrent value: ${space.name}\nType 'edit "NewName"' to change, or 'back' to return.`, type: 'info', blurred: false }];
+					return;
+				} else if (n === 2) {
+					pushCliContext('spaces', { level: 'fieldDetails', space, field: 'order' });
+					terminalLines = [...terminalLines, { text: `Field: order\nCurrent value: ${space.order ?? '-'}\nType 'edit <number>' to change, or 'back' to return.`, type: 'info', blurred: false }];
+					return;
+				} else {
+					terminalLines = [...terminalLines, { text: 'Invalid field number.', type: 'error', blurred: false }];
+					return;
+				}
+			}
+			if (args[0].toLowerCase() === 'back' || args[0].toLowerCase() === 'exit') {
+				popCliContext();
+				return;
+			}
+			terminalLines = [...terminalLines, { text: "Unknown command in space details. Type 'fields', 'sel n', 'back'.", type: 'error', blurred: false }];
+			return;
+		}
+		// Context: fieldDetails (edit field)
+		if (ctx?.data?.level === 'fieldDetails') {
+			const { space, field } = ctx.data;
+			if (args[0].toLowerCase() === 'edit' && args[1]) {
+				const value = args.slice(1).join(' ').replace(/^"|"$/g, '');
+				updateSpace(space, { [field]: field === 'order' ? Number(value) : value });
+				terminalLines = [...terminalLines, { text: `Field '${field}' updated to '${value}'.`, type: 'success', blurred: false }];
+				popCliContext();
+				return;
+			}
+			if (args[0].toLowerCase() === 'back' || args[0].toLowerCase() === 'exit') {
+				popCliContext();
+				return;
+			}
+			terminalLines = [...terminalLines, { text: "Unknown command in field details. Type 'edit <value>' or 'back'.", type: 'error', blurred: false }];
+			return;
+		}
+		terminalLines = [...terminalLines, { text: 'Unknown /spaces command. Type /spaces -h for help.', type: 'error', blurred: false }];
+	}
 </script>
 
 
