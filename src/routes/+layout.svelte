@@ -195,6 +195,12 @@ function handleSelectSpace(id: string) {
 	taskItems.set([]);
 }
 
+// Select a project and load its tasks (used by ProjectList on:select)
+function handleSelectProject(id: string) {
+	selectedProjectId.set(id);
+	fetchTasks(id);
+}
+
 import { get } from 'svelte/store';
 onMount(() => {
 	console.log('[Atlas] onMount: restoring selection from localStorage');
@@ -608,7 +614,7 @@ registerCliHandler('spaces', spacesCliHandler);
 		<!-- Activity Bar -->
 					<SpaceSelector selectedId={$selectedSpaceId} loggedIn={$loggedIn} on:select={e => handleSelectSpace(e.detail)} />
 		<!-- Primary Side Bar (Accordion) -->
-		<aside class="bg-base-100 border-r border-base-300 shadow-sm w-60 min-w-60 flex flex-col">
+	<aside class="bg-base-100 border-r border-base-300 shadow-sm w-80 min-w-72 flex flex-col">
 			<div class="flex flex-col flex-1">
 				<!-- Projects section (top) -->
 				<div class="flex flex-col flex-1 relative">
@@ -623,7 +629,9 @@ registerCliHandler('spaces', spacesCliHandler);
 												loading={$projectsLoading}
 												error={$projectsError}
 												on:projectEditClick={e => openPropertiesPanel('project', e.detail)}
+												on:select={e => handleSelectProject(e.detail)}
 											/>
+
 						<!-- Global entity properties panel -->
 						<EntityPropertiesPanel
 							open={$propertiesPanelOpen}
@@ -654,46 +662,46 @@ registerCliHandler('spaces', spacesCliHandler);
 							{/if}
 						</EntityPropertiesPanel>
 					{/if}
-					<div class="flex-1"></div>
+					   <!-- Removed extra flex-1 spacer to eliminate blank bordered element -->
 					{#if !loggedIn}
 						<div class="absolute inset-0 z-20 bg-base-100/80"></div>
 					{/if}
 				</div>
-				<div class="flex-1"></div>
+				   <!-- Removed extra flex-1 spacer to eliminate blank bordered element -->
 				<!-- Bottom section: Search and Settings -->
 				<SidebarAccordion sidebarSection={$sidebarSection} setSidebarSection={s => sidebarSection.set(s)} />
 			</div>
 		</aside>
 		<!-- Main Editor Area -->
 		<div class="flex-1 flex flex-col min-w-0">
-			<div class="flex-1 flex flex-col min-w-0">
-				<div class="flex flex-1 min-h-0 gap-0 relative">
-					<section class="flex-1 min-w-0 border-r border-base-300 bg-base-100 flex flex-col p-0">
-						<TaskList
-							tasks={$tasks}
-							selectedId={$selectedTaskId}
-							onToggle={handleToggleTask}
-							loading={$tasksLoading}
-							error={$tasksError}
-							on:taskEditClick={e => openPropertiesPanel('task', e.detail)}
-						/>
-					</section>
-					<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
-						<TaskItemList
-							items={$taskItems}
-							loading={$taskItemsLoading}
-							error={$taskItemsError}
-							on:taskItemEditClick={e => openPropertiesPanel('taskItem', e.detail)}
-						/>
-						<!-- {@render children()} -->
-					</section>
-					{#if !loggedIn}
-						<div class="absolute inset-0 z-20 flex items-center justify-center bg-base-100/80">
-							<button class="btn btn-primary btn-lg" onclick={() => openLogin(false)}>Sign in to view your workspace</button>
+					<div class="flex-1 flex flex-col min-w-0">
+						<div class="flex flex-1 min-h-0 gap-0 relative">
+							<section class="flex-1 min-w-0 border-r border-base-300 bg-base-100 flex flex-col p-0">
+								<TaskList
+									tasks={$tasks}
+									selectedId={$selectedTaskId}
+									onToggle={handleToggleTask}
+									loading={$tasksLoading}
+									error={$tasksError}
+									on:taskEditClick={e => openPropertiesPanel('task', e.detail)}
+								/>
+							</section>
+							<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
+								<TaskItemList
+									items={$taskItems}
+									loading={$taskItemsLoading}
+									error={$taskItemsError}
+									on:taskItemEditClick={e => openPropertiesPanel('taskItem', e.detail)}
+								/>
+								<!-- {@render children()} -->
+							</section>
+							{#if !loggedIn}
+								<div class="absolute inset-0 z-20 flex items-center justify-center bg-base-100/80">
+									<button class="btn btn-primary btn-lg" onclick={() => openLogin(false)}>Sign in to view your workspace</button>
+								</div>
+							{/if}
 						</div>
-					{/if}
-				</div>
-			</div>
+					</div>
 			<!-- Terminal Panel always at the bottom -->
 				<TerminalPanel
 					lines={$terminalLines}

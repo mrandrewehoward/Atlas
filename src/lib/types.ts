@@ -16,6 +16,7 @@ export interface Project {
   name: string;
   color?: string;
   icon?: string;
+  priority?: 'low' | 'medium' | 'high' | null;
   created_at: string;
   order?: number;
 }
@@ -36,7 +37,7 @@ export interface Item {
   name: string;
   description?: string;
   status?: string;
-  priority?: string;
+  priority?: 'low' | 'medium' | 'high' | null;
   created_at: string;
   order?: number;
 }

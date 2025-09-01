@@ -1,4 +1,5 @@
 <script lang="ts">
+import Icon from '@iconify/svelte';
 // ...existing code...
 // (No local properties panel state; ensure only uiStore is used for properties panel if needed)
 
@@ -174,9 +175,8 @@ async function updateSpace(space: Space, updates: Partial<Space>) {
   <!-- Manage/Options Button locked to bottom -->
   <div class="flex-1"></div>
   <div class="sticky bottom-0 left-0 w-full flex justify-center z-10">
-    <button class="btn btn-xs btn-ghost rounded-full" aria-label="Panel Options" title="Panel Options" on:click={() => showDrawer = !showDrawer}>
-      <!-- Vertical Ellipsis Icon -->
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>
+    <button class="btn btn-xs btn-ghost rounded-full flex items-center justify-center" aria-label="Settings" title="Settings" on:click={() => showDrawer = !showDrawer}>
+      <Icon icon="material-symbols-light:settings" width="22" height="22" />
     </button>
   </div>
 

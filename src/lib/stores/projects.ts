@@ -51,6 +51,15 @@ export async function addProject(spaceId: string, name: string, order?: number, 
 }
 
 export async function updateProject(project: Project, updates: Partial<Project>) {
+  // Ensure blank color is sent as null
+  if ('color' in updates && (!updates.color || updates.color === undefined)) {
+    updates.color = null;
+  }
+  // Ensure priority is a valid string or null
+  const validPriorities = ['low', 'medium', 'high'];
+  if ('priority' in updates && updates.priority !== null && !validPriorities.includes(updates.priority as string)) {
+    updates.priority = null;
+  }
   const { error } = await supabase
     .from('projects')
     .update(updates)

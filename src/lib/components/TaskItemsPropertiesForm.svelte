@@ -1,4 +1,5 @@
 <script lang="ts">
+import Icon from '@iconify/svelte';
 import type { Item as TaskItem } from '../types';
 export let onUpdate: ((item: TaskItem, updates: Partial<TaskItem>) => void) | null = null;
 export let onDelete: ((item: TaskItem) => void) | null = null;
@@ -71,8 +72,8 @@ $: {
             <option value={i + 1}></option>
           {/each}
         </datalist>
-        <button class="btn btn-xs btn-error ml-2" type="button" aria-label="Delete item" on:click={() => handleDelete(item)}>
-          &#x2715;
+        <button class="btn btn-xs btn-error ml-2 flex items-center gap-1" type="button" aria-label="Delete item" on:click={() => handleDelete(item)}>
+          <Icon icon="material-symbols-light:delete-outline" width="16" height="16" />
         </button>
       </form>
     </li>
@@ -88,6 +89,9 @@ $: {
         if (e.key === 'Enter') handleAdd();
       }}
     />
-    <button class="btn btn-xs btn-primary ml-2" type="button" on:click={handleAdd}>Add</button>
+    <button class="btn btn-xs btn-primary ml-2 flex items-center gap-1" type="button" aria-label="Add item" on:click={handleAdd}>
+      <Icon icon="material-symbols-light:add" width="16" height="16" />
+      <span class="hidden sm:inline">Add</span>
+    </button>
   </li>
 </ul>

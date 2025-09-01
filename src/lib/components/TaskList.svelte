@@ -1,4 +1,5 @@
 <script lang="ts">
+import Icon from '@iconify/svelte';
   export let tasks: Array<{ id: string; name: string; priority?: string; status?: string }> = [];
   export let selectedId: string | null = null;
   import { createEventDispatcher } from 'svelte';
@@ -9,7 +10,7 @@
   export let error: string = '';
 </script>
 
-<section class="flex flex-col h-full bg-base-100 border border-base-100">
+<section class="flex flex-col h-full bg-base-100 border-t border-b border-l border-base-300">
   <div class="flex items-center px-3 h-9 border-b border-base-300 bg-base-200 font-semibold text-base-content text-xs tracking-widest select-none uppercase">
     Tasks
   </div>
@@ -32,7 +33,7 @@
             />
             <button
               type="button"
-              class="flex-1 truncate text-left bg-transparent border-0 p-0 m-0 appearance-none {selectedId === task.id ? 'font-extrabold text-emerald-700' : ''}"
+              class="w-[260px] flex-shrink-0 flex-grow-0 truncate text-left bg-transparent border-0 p-0 m-0 appearance-none ml-2 {selectedId === task.id ? 'font-extrabold text-emerald-700' : ''}"
               aria-pressed={selectedId === task.id}
               aria-label={`Select task ${task.name}`}
               on:click={() => onToggle(task.id)}
@@ -40,9 +41,17 @@
             >
               {task.name}
             </button>
-            {#if task.priority}
-              <span class="badge badge-xs badge-outline ml-2 capitalize">{task.priority}</span>
-            {/if}
+            <span class="w-7 flex items-center justify-center px-1 ml-1">
+              {#if task.priority === 'low'}
+                <Icon icon="material-symbols-light:stat-1" width="16" height="16" class="text-green-500" />
+              {:else if task.priority === 'medium'}
+                <Icon icon="material-symbols-light:stat-2" width="16" height="16" class="text-yellow-400" />
+              {:else if task.priority === 'high'}
+                <Icon icon="material-symbols-light:stat-3" width="16" height="16" class="text-red-500" />
+              {:else}
+                <Icon icon="material-symbols-light:stat-0-outline-rounded" width="16" height="16" style="opacity:0.7;" />
+              {/if}
+            </span>
             {#if task.status}
               <span class="badge badge-xs badge-neutral ml-2 capitalize">{task.status}</span>
             {/if}
@@ -52,7 +61,7 @@
               on:click={(e) => { e.stopPropagation(); dispatch('taskEditClick', task); }}
               on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); dispatch('taskEditClick', task); } }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3z" /></svg>
+              <Icon icon="material-symbols-light:edit-outline" width="16" height="16" />
             </button>
             <button
               class="btn btn-xs btn-ghost px-1"
@@ -60,7 +69,7 @@
               on:click={(e) => { e.stopPropagation(); onDelete(task.id); }}
               on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onDelete(task.id); } }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              <Icon icon="material-symbols-light:delete-outline" width="16" height="16" />
             </button>
           </div>
         </li>

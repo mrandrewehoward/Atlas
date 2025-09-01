@@ -13,7 +13,7 @@
   }
 </script>
 
-<section class="flex flex-col h-full bg-base-100 border border-base-100">
+<section class="flex flex-col h-full bg-base-100 border-t border-b border-base-300">
   <div class="flex items-center px-3 h-9 border-b border-base-300 bg-base-200 font-semibold text-base-content text-xs tracking-widest select-none uppercase">
     Task Items
   </div>

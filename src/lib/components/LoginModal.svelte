@@ -1,4 +1,5 @@
 <script lang="ts">
+import Icon from '@iconify/svelte';
   export let open: boolean;
   export let changePasswordMode: boolean;
   export let registerMode: boolean = false;
@@ -52,7 +53,11 @@
           Sign In
         {/if}
       </button>
-      <button class="btn btn-secondary w-full mt-2" type="button" on:click={onCancel}>Cancel</button>
+      <button class="btn btn-secondary w-full mt-2 flex items-center gap-1 justify-center" type="button" aria-label="Cancel" on:click={onCancel}>
+        <Icon icon="material-symbols-light:close" width="20" height="20" />
+        <span class="hidden sm:inline">Cancel</span>
+      </button>
+import Icon from '@iconify/svelte';
       {#if !registerMode && !changePasswordMode}
         <div class="text-xs text-center mt-2">
           <button type="button" class="link link-primary px-0" on:click={onRegister}>Don't have an account? Register</button>

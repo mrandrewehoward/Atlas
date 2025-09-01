@@ -1,16 +1,32 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import Icon from '@iconify/svelte';
   const dispatch = createEventDispatcher();
-  export let projects: Array<{ id: string; name: string; icon?: string; color?: string; priority?: string }> = [];
+  export let projects: Array<{ id: string; name: string; icon?: string; color?: string; priority?: 'low' | 'medium' | 'high' | null }> = [];
   export let selectedId: string | null = null;
   export let loading: boolean = false;
   export let error: string = '';
+
+  // Status helper
+  function getStatus(priority: 'low' | 'medium' | 'high' | null | undefined): { label: string; color: string } {
+    if (priority === 'high') return { label: 'High', color: 'badge-error' };
+    if (priority === 'low') return { label: 'Low', color: 'badge-info' };
+    if (priority === 'medium') return { label: 'Medium', color: 'badge-ghost' };
+    return { label: 'None', color: 'badge-ghost' };
+  }
 </script>
 
 
-<section class="flex flex-col h-full">
+<section class="flex flex-col h-full min-w-[340px] border-t border-b bg-base-100 border-base-300" style="min-width:340px;">
   <div class="flex items-center px-3 h-9 border-b border-base-300 bg-base-200 font-semibold text-base-content text-xs tracking-widest select-none uppercase">
     Projects
+  </div>
+  <div class="flex items-center px-3 h-6 border-b border-base-200 bg-base-100 text-base-content text-[10px] tracking-widest select-none font-semibold opacity-40">
+  <span class="w-6 text-center"></span>
+  <span class="w-[200px] flex-shrink-0 flex-grow-0 ml-2">Desc</span>
+  <span class="w-7 text-center px-0 ml-0.5">Ico</span>
+  <span class="w-7 text-center px-1 ml-1">Pri</span>
+    <span class="w-8"></span>
   </div>
   {#if loading}
     <div class="p-3 text-xs text-base-content/60">Loading projects...</div>
@@ -22,20 +38,53 @@
     <ul class="flex flex-col divide-y divide-base-300 bg-base-100">
       {#each projects as project, i}
         <li class="group flex items-center px-0 h-9 relative">
-          <label class="flex items-center w-full h-9 px-3 cursor-pointer select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left {selectedId === project.id ? 'font-extrabold text-emerald-700' : ''}">
-            <span class="absolute inset-y-0 left-0 w-0.5 bg-emerald-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 rounded-sm transition-all"></span>
-            <span class="font-medium text-base-content flex-1 truncate {selectedId === project.id ? 'font-extrabold text-emerald-700' : ''}">{project.name}</span>
-            {#if project.priority}
-              <span class="badge badge-xxs badge-outline ml-1 capitalize">{project.priority}</span>
-            {/if}
-            <button
-              class="btn btn-xs btn-ghost ml-2"
-              aria-label="Edit project"
-              on:click={() => dispatch('projectEditClick', project)}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L5 11l4-4z" /></svg>
-            </button>
-          </label>
+          <div class="flex items-center w-full h-9 px-3 cursor-pointer select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left {selectedId === project.id ? 'font-extrabold text-emerald-700' : ''}"
+            tabindex="0"
+            role="button"
+            aria-label={`Select project ${project.name}`}
+            on:click={() => dispatch('select', project.id)}
+            on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch('select', project.id)}
+          >
+            <span class="w-6 flex items-center justify-center">
+              <input type="checkbox" tabindex="-1" class="checkbox checkbox-xs" aria-label="Select project" checked={selectedId === project.id} readonly />
+            </span>
+            <span class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2 {selectedId === project.id ? 'font-extrabold text-emerald-700' : ''}">{project.name.length > 30 ? project.name.slice(0, 30) + '…' : project.name}</span>
+            <span class="w-7 flex items-center justify-center px-1 ml-0.5">
+              {#if project.icon}
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full border border-base-300" style={project.color ? `background:${project.color};` : ''}>
+                  <Icon icon={project.icon} width="18" height="18" style={project.color ? 'color: #fff' : ''} />
+                </span>
+              {:else if project.color}
+                <span class="w-4 h-4 rounded-full border-2 border-base-300" style={`background:${project.color}`}></span>
+              {:else}
+                <Icon icon="material-symbols-light:circle" width="18" height="18" style="opacity:0;" />
+              {/if}
+            </span>
+            <span class="w-7 flex items-center justify-center px-1 ml-1">
+              {#if project.priority === 'low'}
+                <Icon icon="material-symbols-light:stat-1" width="18" height="18" class="text-green-500" />
+              {:else if project.priority === 'medium'}
+                <Icon icon="material-symbols-light:stat-2" width="18" height="18" class="text-yellow-400" />
+              {:else if project.priority === 'high'}
+                <Icon icon="material-symbols-light:stat-3" width="18" height="18" class="text-red-500" />
+              {:else}
+                <Icon icon="material-symbols-light:stat-0-outline-rounded" width="18" height="18" class="text-base-300" />
+              {/if}
+            </span>
+            <span class="flex-1"></span>
+            <span class="w-8 flex items-center justify-end pl-1 pr-1">
+              <button
+                class="btn btn-xs btn-ghost inline-flex items-center justify-center !px-1 !py-0.5 rounded"
+                style="min-width:unset;width:24px;height:24px;"
+                aria-label="Edit project"
+                title="Edit project"
+                tabindex="0"
+                on:click|stopPropagation={() => dispatch('projectEditClick', project)}
+              >
+                <Icon icon="material-symbols-light:edit" width="18" height="18" />
+              </button>
+            </span>
+          </div>
         </li>
       {/each}
     </ul>
