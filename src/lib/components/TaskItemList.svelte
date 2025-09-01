@@ -1,7 +1,8 @@
 
 <script lang="ts">
   export let items: Array<{ id: number|string; name: string; description?: string; created_at?: string; priority?: string; status?: string }> = [];
-  export let onEdit: (id: number|string) => void = () => {};
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
   export let onDelete: (id: number|string) => void = () => {};
   export let onToggle: (id: number|string) => void = () => {};
   export let loading: boolean = false;
@@ -37,7 +38,7 @@
               <span class="badge badge-xs badge-neutral ml-2 capitalize">{item.status}</span>
             {/if}
             <span class="flex flex-row gap-1 ml-2">
-              <button class="btn btn-xs btn-ghost px-1" aria-label="Edit item" on:click|stopPropagation={() => onEdit(item.id)}>
+              <button class="btn btn-xs btn-ghost px-1" aria-label="Edit item" on:click|stopPropagation={() => dispatch('taskItemEditClick', item)}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3z" /></svg>
               </button>
               <button class="btn btn-xs btn-ghost px-1" aria-label="Delete item" on:click|stopPropagation={() => onDelete(item.id)}>

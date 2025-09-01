@@ -1,0 +1,78 @@
+Date : 2025-09-01 15:38:25
+Directory : c:\Andrew\Personal Dev\Svelte\Atlas\src
+Total : 43 files,  2402 codes, 69 comments, 217 blanks, all 2688 lines
+
+Languages
++------------+------------+------------+------------+------------+------------+
+| language   | files      | code       | comment    | blank      | total      |
++------------+------------+------------+------------+------------+------------+
+| Svelte     |         25 |      1,823 |         28 |        136 |      1,987 |
+| TypeScript |         14 |        552 |         39 |         75 |        666 |
+| HTML       |          2 |         18 |          1 |          2 |         21 |
+| PostCSS    |          1 |          9 |          0 |          3 |         12 |
+| JavaScript |          1 |          0 |          1 |          1 |          2 |
++------------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                  | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                     |         43 |      2,402 |         69 |        217 |      2,688 |
+| . (Files)                                                                             |          4 |         32 |          8 |          7 |         47 |
+| lib                                                                                   |         37 |      1,662 |         45 |        175 |      1,882 |
+| lib (Files)                                                                           |          3 |         41 |          3 |         10 |         54 |
+| lib\cli                                                                               |          3 |        141 |         24 |         18 |        183 |
+| lib\components                                                                        |         23 |      1,115 |         12 |        101 |      1,228 |
+| lib\stores                                                                            |          8 |        365 |          6 |         46 |        417 |
+| routes                                                                                |          2 |        708 |         16 |         35 |        759 |
++---------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| filename                                                                              | language   | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\app.css                                       | PostCSS    |          9 |          0 |          3 |         12 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\app.d.ts                                      | TypeScript |          5 |          7 |          2 |         14 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\app.html                                      | HTML       |         17 |          0 |          1 |         18 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\cli\cliParser.ts                          | TypeScript |         15 |          7 |          7 |         29 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\cli\cliStore.ts                           | TypeScript |         31 |          4 |          8 |         43 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\cli\spacesCliHandler.ts                   | TypeScript |         95 |         13 |          3 |        111 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\ActivityBar.svelte             | Svelte     |         20 |          0 |          3 |         23 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\ConfirmModal.svelte            | Svelte     |         47 |          0 |          5 |         52 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\EntityPropertiesPanel.svelte   | Svelte     |         57 |          0 |         11 |         68 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\FooterBar.svelte               | Svelte     |         17 |          0 |          2 |         19 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\Header.svelte                  | Svelte     |         18 |          0 |          3 |         21 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\HeaderBar.svelte               | Svelte     |         22 |          0 |          2 |         24 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\LoginModal.svelte              | Svelte     |         66 |          0 |          5 |         71 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\MainLayout.svelte              | Svelte     |          5 |          7 |          2 |         14 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\ProjectList.svelte             | Svelte     |         41 |          0 |          3 |         44 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\ProjectsPropertiesForm.svelte  | Svelte     |         60 |          0 |          4 |         64 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\SearchPanel.svelte             | Svelte     |         14 |          0 |          2 |         16 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\SettingsPanel.svelte           | Svelte     |          6 |          0 |          2 |          8 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\SidebarAccordion.svelte        | Svelte     |         24 |          0 |          2 |         26 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\SpaceSelector.svelte           | Svelte     |        169 |          4 |         21 |        194 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\SpacesPropertiesForm.svelte    | Svelte     |         89 |          0 |          8 |         97 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\StatusBar.svelte               | Svelte     |         35 |          0 |          5 |         40 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\TaskItemList.svelte            | Svelte     |         70 |          1 |          3 |         74 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\TaskItemsPanel.svelte          | Svelte     |         24 |          0 |          2 |         26 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\TaskItemsPropertiesForm.svelte | Svelte     |         89 |          0 |          5 |         94 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\TaskList.svelte                | Svelte     |         69 |          0 |          2 |         71 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\TasksPropertiesForm.svelte     | Svelte     |         89 |          0 |          5 |         94 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\TerminalPanel.svelte           | Svelte     |         67 |          0 |          2 |         69 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\components\ToastContainer.svelte          | Svelte     |         17 |          0 |          2 |         19 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\index.js                                  | JavaScript |          0 |          1 |          1 |          2 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\stores\loginDrawer.ts                     | TypeScript |          2 |          0 |          2 |          4 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\stores\projects.ts                        | TypeScript |         69 |          1 |          6 |         76 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\stores\spaces.ts                          | TypeScript |         56 |          0 |          6 |         62 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\stores\taskItems.ts                       | TypeScript |         72 |          0 |          6 |         78 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\stores\tasks.ts                           | TypeScript |         72 |          0 |          6 |         78 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\stores\toast.ts                           | TypeScript |         24 |          0 |          7 |         31 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\stores\toastStore.ts                      | TypeScript |         33 |          0 |          8 |         41 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\stores\uiStore.ts                         | TypeScript |         37 |          5 |          5 |         47 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\supabaseClient.ts                         | TypeScript |          4 |          0 |          3 |          7 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\lib\types.ts                                  | TypeScript |         37 |          2 |          6 |         45 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\material-icons.html                           | HTML       |          1 |          1 |          1 |          3 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\routes\+layout.svelte                         | Svelte     |        682 |         11 |         34 |        727 |
+| c:\Andrew\Personal Dev\Svelte\Atlas\src\routes\+page.svelte                           | Svelte     |         26 |          5 |          1 |         32 |
+| Total                                                                                 |            |      2,402 |         69 |        217 |      2,688 |
++---------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+

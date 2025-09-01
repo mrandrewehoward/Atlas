@@ -1,5 +1,6 @@
 <script lang="ts">
 // ...existing code...
+// (No local properties panel state; ensure only uiStore is used for properties panel if needed)
 
 
 import { onMount, createEventDispatcher, onDestroy } from 'svelte';
@@ -141,7 +142,15 @@ async function updateSpace(space: Space, updates: Partial<Space>) {
   {:else if $spacesError}
     <div class="alert alert-error">{$spacesError}</div>
   {:else if $spaces.length === 0}
-    <div class="p-4 text-center text-base-content/60">No spaces found.</div>
+    <ul class="flex flex-col gap-2 items-center py-2 flex-1">
+      {#each Array(2) as _, i}
+        <li>
+          <span class="w-10 h-10 flex items-center justify-center rounded-full bg-base-200 border-2 border-base-300 text-base-content/20 animate-pulse">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m0 14v1m8-8h1M4 12H3m15.364-6.364l.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" /></svg>
+          </span>
+        </li>
+      {/each}
+    </ul>
   {:else}
     <ul class="flex flex-col gap-2 items-center py-2 flex-1">
       {#each $spaces as space}

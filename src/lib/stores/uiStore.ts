@@ -1,3 +1,20 @@
+// Properties panel state
+import type { Project, Task, Item } from '$lib/types';
+export type PropertiesPanelType = 'project' | 'task' | 'taskItem' | null;
+export const propertiesPanelOpen = writable<boolean>(false);
+export const propertiesPanelType = writable<PropertiesPanelType>(null);
+export const propertiesPanelEntity = writable<Project | Task | Item | null>(null);
+
+export function openPropertiesPanel(type: PropertiesPanelType, entity: Project | Task | Item | null) {
+	propertiesPanelType.set(type);
+	propertiesPanelEntity.set(entity);
+	propertiesPanelOpen.set(true);
+}
+export function closePropertiesPanel() {
+	propertiesPanelOpen.set(false);
+	propertiesPanelType.set(null);
+	propertiesPanelEntity.set(null);
+}
 import { writable, type Writable } from 'svelte/store';
 
 // Selection state

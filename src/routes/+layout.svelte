@@ -1,6 +1,15 @@
 <script lang="ts">
 import '../app.css';
 import ProjectList from '$lib/components/ProjectList.svelte';
+import EntityPropertiesPanel from '$lib/components/EntityPropertiesPanel.svelte';
+import TasksPropertiesForm from '$lib/components/TasksPropertiesForm.svelte';
+import TaskItemsPropertiesForm from '$lib/components/TaskItemsPropertiesForm.svelte';
+import { propertiesPanelOpen, propertiesPanelType, propertiesPanelEntity, openPropertiesPanel, closePropertiesPanel } from '$lib/stores/uiStore';
+import { addTask, updateTask, deleteTask } from '$lib/stores/tasks';
+import { addTaskItem, updateTaskItem, deleteTaskItem } from '$lib/stores/taskItems';
+// State for entity properties panel
+// Properties panel state now in uiStore
+import ProjectsPropertiesForm from '$lib/components/ProjectsPropertiesForm.svelte';
 import TaskList from '$lib/components/TaskList.svelte';
 import TaskItemList from '$lib/components/TaskItemList.svelte';
 import HeaderBar from '$lib/components/HeaderBar.svelte';
@@ -14,6 +23,7 @@ import SpaceSelector from '$lib/components/SpaceSelector.svelte';
 import { spaces, spacesLoading, spacesError, fetchSpaces } from '$lib/stores/spaces';
 import { supabase } from '$lib/supabaseClient.js';
 import { projects as projectsStore, projectsLoading, projectsError, fetchProjects } from '$lib/stores/projects';
+import { projects, addProject, updateProject, deleteProject } from '$lib/stores/projects';
 import { onMount } from 'svelte';
 import {
 	selectedSpaceId,
@@ -609,12 +619,40 @@ registerCliHandler('spaces', spacesCliHandler);
 					{:else}
 											<ProjectList
 												projects={$projectsStore}
-												selectedProjectIds={$selectedProjectIds}
 												selectedId={$selectedProjectId}
-												onToggleProject={handleToggleProject}
 												loading={$projectsLoading}
 												error={$projectsError}
+												on:projectEditClick={e => openPropertiesPanel('project', e.detail)}
 											/>
+						<!-- Global entity properties panel -->
+						<EntityPropertiesPanel
+							open={$propertiesPanelOpen}
+							title={$propertiesPanelType === 'project' ? 'Project Properties' : $propertiesPanelType === 'task' ? 'Task Properties' : $propertiesPanelType === 'taskItem' ? 'Task Item Properties' : 'Properties'}
+							width="md"
+							onClose={closePropertiesPanel}
+						>
+							{#if $propertiesPanelType === 'project'}
+								<ProjectsPropertiesForm
+									project={$propertiesPanelType === 'project' && $propertiesPanelEntity && 'space_id' in $propertiesPanelEntity ? $propertiesPanelEntity : null}
+									onUpdate={updateProject}
+									onDelete={deleteProject}
+								/>
+							{:else if $propertiesPanelType === 'task'}
+								<TasksPropertiesForm
+									tasks={$tasks}
+									onAdd={name => $selectedProjectId && addTask($selectedProjectId, name)}
+									onUpdate={updateTask}
+									onDelete={deleteTask}
+								/>
+							{:else if $propertiesPanelType === 'taskItem'}
+								<TaskItemsPropertiesForm
+									items={$taskItems}
+									onAdd={name => $selectedTaskId && addTaskItem($selectedTaskId, name)}
+									onUpdate={updateTaskItem}
+									onDelete={deleteTaskItem}
+								/>
+							{/if}
+						</EntityPropertiesPanel>
 					{/if}
 					<div class="flex-1"></div>
 					{#if !loggedIn}
@@ -623,7 +661,7 @@ registerCliHandler('spaces', spacesCliHandler);
 				</div>
 				<div class="flex-1"></div>
 				<!-- Bottom section: Search and Settings -->
-						<SidebarAccordion sidebarSection={$sidebarSection} setSidebarSection={s => sidebarSection.set(s)} />
+				<SidebarAccordion sidebarSection={$sidebarSection} setSidebarSection={s => sidebarSection.set(s)} />
 			</div>
 		</aside>
 		<!-- Main Editor Area -->
@@ -631,27 +669,24 @@ registerCliHandler('spaces', spacesCliHandler);
 			<div class="flex-1 flex flex-col min-w-0">
 				<div class="flex flex-1 min-h-0 gap-0 relative">
 					<section class="flex-1 min-w-0 border-r border-base-300 bg-base-100 flex flex-col p-0">
-											<TaskList
-												tasks={$tasks}
-												selectedId={$selectedTaskId}
-												onEdit={() => {}}
-												onDelete={() => {}}
-												onToggle={handleToggleTask}
-												loading={$tasksLoading}
-												error={$tasksError}
-											/>
+						<TaskList
+							tasks={$tasks}
+							selectedId={$selectedTaskId}
+							onToggle={handleToggleTask}
+							loading={$tasksLoading}
+							error={$tasksError}
+							on:taskEditClick={e => openPropertiesPanel('task', e.detail)}
+						/>
 					</section>
-								<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
-														<TaskItemList
-															items={$taskItems}
-															onEdit={() => {}}
-															onDelete={() => {}}
-															onToggle={() => {}}
-															loading={$taskItemsLoading}
-															error={$taskItemsError}
-														/>
-									<!-- {@render children()} -->
-								</section>
+					<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
+						<TaskItemList
+							items={$taskItems}
+							loading={$taskItemsLoading}
+							error={$taskItemsError}
+							on:taskItemEditClick={e => openPropertiesPanel('taskItem', e.detail)}
+						/>
+						<!-- {@render children()} -->
+					</section>
 					{#if !loggedIn}
 						<div class="absolute inset-0 z-20 flex items-center justify-center bg-base-100/80">
 							<button class="btn btn-primary btn-lg" onclick={() => openLogin(false)}>Sign in to view your workspace</button>

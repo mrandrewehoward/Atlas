@@ -37,6 +37,7 @@
 		"vite-plugin-devtools-json": "^1.0.0"
 	},
 	"dependencies": {
+		"@iconify/svelte": "^5.0.1",
 		"@supabase/supabase-js": "^2.56.1",
 		"daisyui": "^5.0.52"
 	}
