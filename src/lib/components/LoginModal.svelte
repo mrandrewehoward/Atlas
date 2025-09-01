@@ -10,6 +10,11 @@
   export let onSubmit: (e: Event) => void;
   export let onCancel: () => void;
   export let onRegister: () => void;
+
+  let emailInput: HTMLInputElement | null = null;
+  $: if (open && emailInput) {
+    setTimeout(() => emailInput && emailInput.focus(), 0);
+  }
 </script>
 
 {#if open}
@@ -24,7 +29,16 @@
           Sign In
         {/if}
       </h2>
-      <input class="input input-primary input-bordered" type="email" placeholder="Email" aria-label="Email" bind:value={loginEmail} on:input={e => onEmailChange((e.target as HTMLInputElement).value)} required />
+      <input
+        class="input input-primary input-bordered"
+        type="email"
+        placeholder="Email"
+        aria-label="Email"
+        bind:value={loginEmail}
+        on:input={e => onEmailChange((e.target as HTMLInputElement).value)}
+        required
+        bind:this={emailInput}
+      />
       <input class="input input-primary input-bordered" type="password" placeholder={changePasswordMode ? 'New Password' : registerMode ? 'Create Password' : 'Password'} aria-label="Password" bind:value={loginPassword} on:input={e => onPasswordChange((e.target as HTMLInputElement).value)} required />
       {#if loginError}
         <div class="text-error text-xs text-center">{loginError}</div>
@@ -52,3 +66,5 @@
     </form>
   </div>
 {/if}
+
+

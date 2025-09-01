@@ -15,9 +15,9 @@ export let onLogout: () => void;
   </div>
   <div class="flex items-center gap-2">
     {#if !loggedIn}
-      <button class="btn btn-primary btn-sm" onclick={onLogin}>Login</button>
+  <button class="btn btn-primary btn-sm" on:click={onLogin}>Login</button>
     {:else}
-      <button class="btn btn-ghost btn-sm" onclick={onLogout}>Logout</button>
+  <button class="btn btn-ghost btn-sm" on:click={onLogout}>Logout</button>
     {/if}
   </div>
 </header>

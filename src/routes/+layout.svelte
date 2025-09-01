@@ -176,11 +176,9 @@ onMount(() => {
 	const storedProjectId = localStorage.getItem('selectedProjectId');
 	const storedTaskId = localStorage.getItem('selectedTaskId');
 	fetchSpaces().then(() => {
-		// Always sort spaces alpha by name
+		// Use the spaces as already sorted by order+alpha from the store
 		let spacesArr = get(spaces);
 		if (spacesArr && spacesArr.length > 0) {
-			spacesArr = [...spacesArr].sort((a, b) => a.name.localeCompare(b.name));
-			// Always select first alpha space on load
 			selectedSpaceId = spacesArr[0].id;
 			localStorage.setItem('selectedSpaceId', selectedSpaceId);
 			fetchProjects(selectedSpaceId).then(() => {
@@ -489,7 +487,7 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 	<!-- Main layout row: Activity bar, sidebar, main, panel -->
 	<div class="flex flex-1 min-h-0">
 		<!-- Activity Bar -->
-			<SpaceSelector selectedId={selectedSpaceId} on:select={e => handleSelectSpace(e.detail)} />
+			<SpaceSelector selectedId={selectedSpaceId} {loggedIn} on:select={e => handleSelectSpace(e.detail)} />
 		<!-- Primary Side Bar (Accordion) -->
 		<aside class="bg-base-100 border-r border-base-300 shadow-sm w-60 min-w-60 flex flex-col">
 			<div class="flex flex-col flex-1">

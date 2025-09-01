@@ -12,7 +12,8 @@ export async function fetchSpaces() {
   const { data, error } = await supabase
     .from('spaces')
     .select('*')
-    .order('created_at', { ascending: true });
+  .order('order', { ascending: true })
+    .order('name', { ascending: true });
   console.log('fetchSpaces result:', { data, error });
   if (error) {
     spacesError.set(error.message);

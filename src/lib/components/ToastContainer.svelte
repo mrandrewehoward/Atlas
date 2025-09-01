@@ -8,7 +8,7 @@
   onDestroy(unsubscribe);
 </script>
 
-<div class="fixed top-4 right-4 z-[1000] flex flex-col gap-2 items-end">
+<div class="fixed top-4 left-1/2 -translate-x-1/2 z-[1000] flex flex-col gap-2 items-center">
   {#each toasts as toast (toast.id)}
     <div class="alert alert-{toast.type} shadow-lg min-w-[220px] max-w-xs flex items-center">
       <span class="flex-1">{toast.message}</span>

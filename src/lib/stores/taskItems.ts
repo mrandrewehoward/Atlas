@@ -19,14 +19,22 @@ export async function fetchTaskItems(taskId: string) {
     .from('items')
     .select('*')
     .eq('task_id', taskId)
-    .order('created_at', { ascending: true });
+    .order('order', { ascending: true })
+    .order('name', { ascending: true });
   if (error) {
     console.log('[Atlas] fetchTaskItems error:', error.message);
     taskItemsError.set(error.message);
     taskItems.set([]);
   } else {
-    console.log('[Atlas] fetchTaskItems result:', data);
-    taskItems.set(data || []);
+    let arr = (data || []).slice();
+    arr.sort((a, b) => {
+      if (a.order == null && b.order == null) return a.name.localeCompare(b.name);
+      if (a.order == null) return 1;
+      if (b.order == null) return -1;
+      if (a.order === b.order) return a.name.localeCompare(b.name);
+      return a.order - b.order;
+    });
+    taskItems.set(arr);
   }
   taskItemsLoading.set(false);
 }
