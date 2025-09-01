@@ -108,6 +108,19 @@ Space order updated to 1
 
 ---
 
+## TODO / Improvements
+
+- Command line improvements (parsing, error messages, context stack, drill-down, etc.)
+- Usage cleanup and consistency for all entity modes (spaces, projects, tasks, items)
+- Add contextual help for all entity modes
+- Accessibility/a11y review for all CLI and UI interactions
+- Add more robust error handling and user feedback in CLI
+- Expand CLI to support all CRUD operations for projects, tasks, and items
+- Add keyboard shortcuts and power-user features
+- Polish CLI output formatting and UX
+
+---
+
 ## Accessibility & Svelte 5
 
 - All terminal output is accessible (aria-live, keyboard navigation, etc.)

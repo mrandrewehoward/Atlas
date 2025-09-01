@@ -75,5 +75,16 @@ This file tracks key features, screens, and implementation tasks based on your d
 - Add keyboard navigation and ARIA to all interactive elements.
 - Add a global store for user/session state if needed.
 
+---
+
+## Command Line Improvements & Usage Cleanup
+
+- Improve CLI command parsing and error messages
+- Add usage consistency and cleanup for all entity modes (spaces, projects, tasks, items)
+- Add contextual help for all entity modes
+- Expand context stack and drill-down navigation
+- Add keyboard shortcuts and power-user features
+- Polish CLI output formatting and UX
+
 -- See `db-feature-mapping.md` and `copilot-instructions.md` for full details.
 -- Update this file as features are added, changed, or completed.

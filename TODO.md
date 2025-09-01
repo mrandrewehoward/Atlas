@@ -24,6 +24,14 @@
 - [ ] Expand CLI: /reset-password, /confirm-email, /spaces, /projects, /tasks (real data)
 - [ ] Add command history navigation (up/down arrows)
 
+## Command Line Improvements & Usage Cleanup
+- Improve CLI command parsing and error messages
+- Add usage consistency and cleanup for all entity modes (spaces, projects, tasks, items)
+- Add contextual help for all entity modes
+- Expand context stack and drill-down navigation
+- Add keyboard shortcuts and power-user features
+- Polish CLI output formatting and UX
+
 ## UI/UX Polish
 - [ ] Add meta tags and SEO improvements in <svelte:head>
 - [ ] Audit bundle size and optimize imports

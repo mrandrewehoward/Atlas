@@ -409,6 +409,17 @@ function closeLogin() { loginModalOpen = false; loginEmail = ''; loginPassword =
 		// --- CLI context stack routing ---
 		if (cliContextStack.length > 0) {
 			const ctx = cliContextStack[cliContextStack.length - 1];
+			if (cmdLower === 'help' || cmdLower === '/help' || cmdLower === '-h' || cmdLower === '--help') {
+				// Contextual help for current mode
+				if (ctx.mode === 'spaces') {
+					terminalLines = [...terminalLines, { text:
+`/spaces area commands:\n\nls - List all spaces\nsel n - Select space by number\nfields - List fields for selected space\nadd - Add a new space (prompts for fields)\nadd -d "Title" - Add a new space with name/title\ndel n - Delete space n (confirmation)\norder n up/down - Move space n up or down\nstats n - Show stats/details for space n\nsearch term - Search spaces\nback - Return to previous menu\nexit - Exit terminal\n\nAll commands are case-insensitive. See docs/cli-commands.md for full reference.`, type: 'info', blurred: false }];
+					terminalInput = '';
+					setTimeout(() => scrollTerminalToBottom(), 0);
+					return;
+				}
+				// Future: add help for other entity modes
+			}
 			if (ctx.mode === 'spaces') {
 				// If user types back/exit, pop context
 				if (cmdLower === 'back' || cmdLower === 'exit') {
