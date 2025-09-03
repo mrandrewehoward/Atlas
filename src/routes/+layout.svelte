@@ -654,8 +654,7 @@ registerCliHandler('spaces', spacesCliHandler);
 								/>
 							{:else if $propertiesPanelType === 'taskItem'}
 								<TaskItemsPropertiesForm
-									items={$taskItems}
-									onAdd={name => $selectedTaskId && addTaskItem($selectedTaskId, name)}
+									item={$propertiesPanelEntity}
 									onUpdate={updateTaskItem}
 									onDelete={deleteTaskItem}
 								/>

@@ -1,97 +1,100 @@
 <script lang="ts">
-import Icon from '@iconify/svelte';
 import type { Item as TaskItem } from '../types';
+import Icon from '@iconify/svelte';
 export let onUpdate: ((item: TaskItem, updates: Partial<TaskItem>) => void) | null = null;
 export let onDelete: ((item: TaskItem) => void) | null = null;
-export let onAdd: ((name: string) => void) | null = null;
-export let items: TaskItem[] = [];
+export let item: TaskItem | null = null;
 
-let newItemName = '';
-let localOrder: Record<string, string> = {};
+let localOrder: string = item && item.order !== undefined && item.order !== null ? String(item.order) : '';
 
-function handleUpdate(item: TaskItem, updates: Partial<TaskItem>) {
-  if (onUpdate) onUpdate(item, updates);
+function handleUpdate(updates: Partial<TaskItem>) {
+  if (item && onUpdate) onUpdate(item, updates);
 }
-function handleDelete(item: TaskItem) {
-  if (onDelete) onDelete(item);
-}
-function handleAdd() {
-  if (newItemName.trim() && onAdd) {
-    onAdd(newItemName.trim());
-    newItemName = '';
-  }
-}
-
-$: {
-  for (const item of items) {
-    localOrder[item.id] =
-      item.order === undefined || item.order === null ? '' : String(item.order);
-  }
+function handleDelete() {
+  if (item && onDelete) onDelete(item);
 }
 </script>
 
-<ul class="flex flex-col gap-2 mb-4">
-  {#each items as item (item.id)}
-    <li class="flex items-center gap-2">
-      <form class="flex-1 flex gap-2 items-center" on:submit|preventDefault={() => handleUpdate(item, { name: item.name, order: localOrder[item.id] ? Number(localOrder[item.id]) : undefined })}>
-        <input
-          class="input input-sm flex-1 border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1"
-          type="text"
-          bind:value={item.name}
-          aria-label="Edit item name"
-          on:keydown={(e) => {
-            const input = e.target as HTMLInputElement;
-            if (e.key === 'Enter' && input.form) input.form.requestSubmit();
-          }}
-        />
-        <input
-          class="input input-xs w-16 text-center"
-          type="text"
-          inputmode="numeric"
-          pattern="[1-9][0-9]*"
-          bind:value={localOrder[item.id]}
-          aria-label="Order"
-          list={`order-options-${item.id}`}
-          on:input={(e) => {
-            const val = (e.target as HTMLInputElement).value;
-            localOrder[item.id] = val;
-          }}
-          on:blur={() => {
-            const val = localOrder[item.id];
-            if (val === '' || val === null) {
-              handleUpdate(item, { order: undefined });
-            } else {
-              const num = Number(val);
-              if (!isNaN(num) && num >= 1 && num <= items.length) handleUpdate(item, { order: num });
-            }
-          }}
-          style="width:3.5rem;"
-        />
-        <datalist id={`order-options-${item.id}`}>
-          {#each Array(items.length) as _, i}
-            <option value={i + 1}></option>
-          {/each}
-        </datalist>
-        <button class="btn btn-xs btn-error ml-2 flex items-center gap-1" type="button" aria-label="Delete item" on:click={() => handleDelete(item)}>
-          <Icon icon="material-symbols-light:delete-outline" width="16" height="16" />
-        </button>
-      </form>
-    </li>
-  {/each}
-  <li class="flex items-center gap-2 mt-2">
+
+{#if item}
+<form class="flex flex-col gap-4" on:submit|preventDefault={() => handleUpdate({
+  name: item.name,
+  description: item.description,
+  status: item.status,
+  priority: item.priority,
+  order: localOrder ? Number(localOrder) : undefined
+})} aria-label="Task Item Properties Form">
+  <div class="flex flex-col">
+    <label class="text-xs font-semibold mb-1" for="item-name">Name</label>
     <input
-      class="input input-sm flex-1 border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1"
+      id="item-name"
+      class="input input-sm border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1"
       type="text"
-      bind:value={newItemName}
-      placeholder="Add new item..."
-      aria-label="Add new item"
-      on:keydown={(e) => {
-        if (e.key === 'Enter') handleAdd();
-      }}
+      bind:value={item.name}
+      aria-label="Edit item name"
+      required
     />
-    <button class="btn btn-xs btn-primary ml-2 flex items-center gap-1" type="button" aria-label="Add item" on:click={handleAdd}>
-      <Icon icon="material-symbols-light:add" width="16" height="16" />
-      <span class="hidden sm:inline">Add</span>
+  </div>
+  <div class="flex flex-col">
+    <label class="text-xs font-semibold mb-1" for="item-description">Description</label>
+    <textarea
+      id="item-description"
+      class="textarea textarea-sm border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1"
+      bind:value={item.description}
+      aria-label="Edit item description"
+      rows="2"
+    ></textarea>
+  </div>
+  <div class="flex flex-row gap-4">
+    <div class="flex flex-col w-32">
+      <label class="text-xs font-semibold mb-1" for="item-order">Order</label>
+      <input
+        id="item-order"
+        class="input input-xs w-16 text-center"
+        type="number"
+        min="1"
+        bind:value={localOrder}
+        aria-label="Order"
+        style="width:3.5rem;"
+      />
+    </div>
+    <div class="flex flex-col w-32">
+      <label class="text-xs font-semibold mb-1" for="item-status">Status</label>
+      <select
+        id="item-status"
+        class="select select-xs"
+        bind:value={item.status}
+        aria-label="Edit item status"
+      >
+        <option value="">--</option>
+        <option value="open">Open</option>
+        <option value="in-progress">In Progress</option>
+        <option value="done">Done</option>
+      </select>
+    </div>
+    <div class="flex flex-col w-32">
+      <label class="text-xs font-semibold mb-1" for="item-priority">Priority</label>
+      <select
+        id="item-priority"
+        class="select select-xs"
+        bind:value={item.priority}
+        aria-label="Edit item priority"
+      >
+        <option value="">--</option>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+  </div>
+  <div class="flex flex-row gap-2 mt-2">
+    <button class="btn btn-sm btn-primary" type="submit" aria-label="Save changes">Save</button>
+    <button class="btn btn-sm btn-error" type="button" aria-label="Delete item" on:click={handleDelete}>
+      <Icon icon="material-symbols-light:delete-outline" width="16" height="16" />
+      Delete
     </button>
-  </li>
-</ul>
+  </div>
+</form>
+{:else}
+<div class="text-base-content/60 italic">No task item selected.</div>
+{/if}
