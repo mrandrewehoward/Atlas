@@ -25,6 +25,9 @@ export interface Task {
   id: string;
   project_id: string;
   name: string;
+  icon?: string;
+  color?: string;
+  priority?: 'low' | 'medium' | 'high' | null;
   description?: string;
   status?: string;
   created_at: string;

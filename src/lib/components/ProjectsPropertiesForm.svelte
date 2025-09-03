@@ -22,6 +22,7 @@ const colorOptions = [
 ];
 // Verified Material Symbols Light icons for projects (see icon-sets.iconify.design)
 const iconOptions = [
+  '', // blank/none
   'material-symbols-light:folder-outline',
   'material-symbols-light:work-outline',
   'material-symbols-light:lightbulb-outline',
@@ -115,10 +116,14 @@ function handleKeydown(e: KeyboardEvent) {
         <button
           type="button"
           class="w-8 h-8 rounded border-2 flex items-center justify-center {edit.icon === icon ? 'border-emerald-500 ring-2 ring-emerald-300' : 'border-base-300'}"
-          aria-label={icon}
+          aria-label={icon ? icon : 'No icon'}
           on:click={() => edit.icon = icon}
         >
-          <Icon icon={icon} width="22" height="22" />
+          {#if icon === ''}
+            <span class="w-5 h-5 block border border-dashed border-base-300 rounded"></span>
+          {:else}
+            <Icon icon={icon} width="22" height="22" />
+          {/if}
         </button>
       {/each}
     </div>

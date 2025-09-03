@@ -1,11 +1,10 @@
 <script lang="ts">
 import Icon from '@iconify/svelte';
-  export let tasks: Array<{ id: string; name: string; priority?: string; status?: string }> = [];
+  export let tasks: Array<{ id: string; name: string; icon?: string; color?: string; priority?: 'low' | 'medium' | 'high' | null; status?: string }> = [];
   export let selectedId: string | null = null;
   import { createEventDispatcher } from 'svelte';
   const dispatch = createEventDispatcher();
-  export let onDelete: (id: string) => void = () => {};
-  export let onToggle: (id: string) => void = () => {};
+  // Removed unused export lets onDelete and onToggle
   export let loading: boolean = false;
   export let error: string = '';
 </script>
@@ -13,6 +12,15 @@ import Icon from '@iconify/svelte';
 <section class="flex flex-col h-full bg-base-100 border-t border-b border-l border-base-300">
   <div class="flex items-center px-3 h-9 border-b border-base-300 bg-base-200 font-semibold text-base-content text-xs tracking-widest select-none uppercase">
     Tasks
+  </div>
+  <div class="flex items-center px-3 h-6 border-b border-base-200 bg-base-100 text-base-content text-[10px] tracking-widest select-none font-semibold opacity-40">
+  <span class="w-[120px] flex-shrink-0 flex-grow-0 ml-2 text-left">Name</span>
+    <span class="flex-1"></span>
+    <div class="flex flex-row items-center gap-2 min-w-[120px] justify-end">
+  <span class="w-8 text-center px-1" title="Icon" aria-label="Icon">I</span>
+  <span class="w-8 text-center px-1" title="Priority" aria-label="Priority">P</span>
+      <span class="w-8 text-right px-1"></span>
+    </div>
   </div>
   {#if loading}
     <div class="p-3 text-xs text-base-content/60">Loading tasks...</div>
@@ -23,54 +31,55 @@ import Icon from '@iconify/svelte';
   {:else}
     <ul class="flex flex-col divide-y divide-base-300 bg-base-100">
       {#each tasks as task}
-        <li>
-          <div class="group relative flex items-center w-full px-3 h-9 cursor-pointer select-none hover:bg-blue-50/80 focus:bg-blue-50/80 transition-all text-xs font-mono tracking-tight text-left {selectedId === task.id ? 'font-extrabold text-emerald-700' : ''}">
-            <span class="absolute inset-y-0 left-0 w-0.5 bg-blue-400 opacity-0 group-hover:opacity-70 group-focus-within:opacity-70 rounded-sm transition-all z-10"></span>
-            <input
-              type="checkbox"
-              class="checkbox checkbox-xs mr-2"
-              on:click|stopPropagation={() => onToggle(task.id)}
-            />
-            <button
-              type="button"
-              class="w-[260px] flex-shrink-0 flex-grow-0 truncate text-left bg-transparent border-0 p-0 m-0 appearance-none ml-2 {selectedId === task.id ? 'font-extrabold text-emerald-700' : ''}"
-              aria-pressed={selectedId === task.id}
-              aria-label={`Select task ${task.name}`}
-              on:click={() => onToggle(task.id)}
-              on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { onToggle(task.id); } }}
-            >
-              {task.name}
-            </button>
-            <span class="w-7 flex items-center justify-center px-1 ml-1">
-              {#if task.priority === 'low'}
-                <Icon icon="material-symbols-light:stat-1" width="16" height="16" class="text-green-500" />
-              {:else if task.priority === 'medium'}
-                <Icon icon="material-symbols-light:stat-2" width="16" height="16" class="text-yellow-400" />
-              {:else if task.priority === 'high'}
-                <Icon icon="material-symbols-light:stat-3" width="16" height="16" class="text-red-500" />
-              {:else}
-                <Icon icon="material-symbols-light:stat-0-outline-rounded" width="16" height="16" style="opacity:0.7;" />
-              {/if}
+        <li class="group flex items-center px-0 h-9 relative">
+          <div class="flex items-center w-full h-9 px-3 cursor-pointer select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left {selectedId === task.id ? 'font-extrabold text-emerald-700' : ''}"
+            tabindex="0"
+            role="button"
+            aria-label={`Select task ${task.name}`}
+            on:click={() => dispatch('select', task.id)}
+            on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch('select', task.id)}
+          >
+            <span class="w-6 flex items-center justify-center">
+              <input type="checkbox" tabindex="-1" class="checkbox checkbox-xs" aria-label="Select task" checked={selectedId === task.id} readonly />
             </span>
-            {#if task.status}
-              <span class="badge badge-xs badge-neutral ml-2 capitalize">{task.status}</span>
-            {/if}
-            <button
-              class="btn btn-xs btn-ghost px-1 ml-2"
-              aria-label="Edit task"
-              on:click={(e) => { e.stopPropagation(); dispatch('taskEditClick', task); }}
-              on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); dispatch('taskEditClick', task); } }}
-            >
-              <Icon icon="material-symbols-light:edit-outline" width="16" height="16" />
-            </button>
-            <button
-              class="btn btn-xs btn-ghost px-1"
-              aria-label="Delete task"
-              on:click={(e) => { e.stopPropagation(); onDelete(task.id); }}
-              on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onDelete(task.id); } }}
-            >
-              <Icon icon="material-symbols-light:delete-outline" width="16" height="16" />
-            </button>
+            <span class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2 {selectedId === task.id ? 'font-extrabold text-emerald-700' : ''}">{task.name.length > 30 ? task.name.slice(0, 30) + '…' : task.name}</span>
+            <span class="flex-1"></span>
+            <div class="flex flex-row items-center gap-2 min-w-[120px] justify-end">
+              <span class="w-9 flex items-center justify-center px-1">
+                {#if task.icon}
+                  <span class="inline-flex items-center justify-center w-6 h-6 rounded-full border border-base-300" style={task.color ? `background:${task.color};` : ''}>
+                    <Icon icon={task.icon} width="18" height="18" style={task.color ? 'color: #fff' : ''} />
+                  </span>
+                {:else if task.color}
+                  <span class="w-4 h-4 rounded-full border-2 border-base-300" style={`background:${task.color}`}></span>
+                {:else}
+                  <Icon icon="material-symbols-light:circle" width="18" height="18" style="opacity:0;" />
+                {/if}
+              </span>
+              <span class="w-9 flex items-center justify-center px-1">
+                {#if task.priority === 'low'}
+                  <Icon icon="material-symbols-light:stat-1" width="18" height="18" class="text-green-500" />
+                {:else if task.priority === 'medium'}
+                  <Icon icon="material-symbols-light:stat-2" width="18" height="18" class="text-yellow-400" />
+                {:else if task.priority === 'high'}
+                  <Icon icon="material-symbols-light:stat-3" width="18" height="18" class="text-red-500" />
+                {:else}
+                  <Icon icon="material-symbols-light:stat-0-outline-rounded" width="18" height="18" class="text-base-300" />
+                {/if}
+              </span>
+              <span class="w-8 flex items-center justify-end pl-1 pr-1">
+                <button
+                  class="btn btn-xs btn-ghost inline-flex items-center justify-center !px-1 !py-0.5 rounded"
+                  style="min-width:unset;width:24px;height:24px;"
+                  aria-label="Edit task"
+                  title="Edit task"
+                  tabindex="0"
+                  on:click|stopPropagation={() => dispatch('taskEditClick', task)}
+                >
+                  <Icon icon="material-symbols-light:edit" width="18" height="18" />
+                </button>
+              </span>
+            </div>
           </div>
         </li>
       {/each}

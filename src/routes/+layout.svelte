@@ -680,10 +680,10 @@ registerCliHandler('spaces', spacesCliHandler);
 								<TaskList
 									tasks={$tasks}
 									selectedId={$selectedTaskId}
-									onToggle={handleToggleTask}
 									loading={$tasksLoading}
 									error={$tasksError}
 									on:taskEditClick={e => openPropertiesPanel('task', e.detail)}
+									on:select={e => handleToggleTask(e.detail)}
 								/>
 							</section>
 							<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
