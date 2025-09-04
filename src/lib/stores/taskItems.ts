@@ -7,11 +7,11 @@ export const taskItemsLoading = writable(false);
 export const taskItemsError = writable('');
 
 export async function fetchTaskItems(taskId: string) {
-  console.log('[Atlas] fetchTaskItems called with taskId:', taskId);
+  // ...removed debug logging...
   taskItemsLoading.set(true);
   taskItemsError.set('');
   if (!taskId) {
-    console.log('[Atlas] fetchTaskItems: no taskId, clearing taskItems');
+  // ...removed debug logging...
     taskItems.set([]);
     taskItemsLoading.set(false);
     return;
@@ -23,7 +23,7 @@ export async function fetchTaskItems(taskId: string) {
     .order('order', { ascending: true })
     .order('name', { ascending: true });
   if (error) {
-    console.log('[Atlas] fetchTaskItems error:', error.message);
+  // ...removed error logging...
     taskItemsError.set(error.message);
     taskItems.set([]);
   } else {

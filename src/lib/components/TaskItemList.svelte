@@ -19,12 +19,14 @@ function toggleExpand(id: number|string) {
     Task Items
   </div>
   <div class="flex items-center px-3 h-6 border-b border-base-200 bg-base-100 text-base-content text-[10px] tracking-widest select-none font-semibold opacity-40">
-  <span class="w-[120px] flex-shrink-0 flex-grow-0 ml-2 text-left">Name</span>
+    <span class="w-[120px] flex-shrink-0 flex-grow-0 ml-2 text-left">Name</span>
     <span class="flex-1"></span>
-  <span class="w-8 text-center px-1" title="Icon" aria-label="Icon">I</span>
-  <span class="w-8 text-center px-1" title="Priority" aria-label="Priority">P</span>
-  <span class="w-8 text-right px-1"></span>
-    
+    <span class="w-8 text-center px-1" title="Icon" aria-label="Icon">I</span>
+    <span class="w-8 text-center px-1" title="Priority" aria-label="Priority">P</span>
+    <span class="w-8 text-center px-1" title="Print" aria-label="Print">
+      <Icon icon="material-symbols:print-outline" width="14" height="14" class="opacity-60" />
+    </span>
+    <span class="w-8 text-right px-1"></span>
   </div>
   {#if loading}
     <div class="p-3 text-xs text-base-content/60">Loading items...</div>
@@ -61,6 +63,18 @@ function toggleExpand(id: number|string) {
                 {:else}
                   <Icon icon="material-symbols-light:circle" width="18" height="18" style="opacity:0;" />
                 {/if}
+              </span>
+              <span class="w-8 flex items-center justify-center">
+                <button
+                  class="btn btn-xs btn-ghost inline-flex items-center justify-center !px-1 !py-0.5 rounded"
+                  style="min-width:unset;width:24px;height:24px;"
+                  aria-label="Print item"
+                  title="Print item"
+                  tabindex="0"
+                  on:click|stopPropagation={() => dispatch('taskItemPrintClick', item)}
+                >
+                  <Icon icon="material-symbols:print-outline" width="18" height="18" />
+                </button>
               </span>
               <span class="w-8 flex items-center justify-end pl-1 pr-1">
                 <button

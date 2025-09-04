@@ -14,7 +14,7 @@ export async function fetchSpaces() {
     .select('*')
   .order('order', { ascending: true })
     .order('name', { ascending: true });
-  console.log('fetchSpaces result:', { data, error });
+  // ...removed debug logging...
   if (error) {
     spacesError.set(error.message);
     spaces.set([]);
@@ -32,7 +32,7 @@ export async function addSpace(name: string) {
   if (!error) {
     fetchSpaces();
   } else {
-    console.error('Failed to add space:', error.message);
+  // ...removed error logging...
   }
 }
 
@@ -44,7 +44,7 @@ export async function deleteSpace(space: Space) {
   if (!error) {
     fetchSpaces();
   } else {
-    console.error('Failed to delete space:', error.message);
+  // ...removed error logging...
   }
 }
 
@@ -56,6 +56,6 @@ export async function updateSpace(space: Space, updates: Partial<Space>) {
   if (!error) {
     fetchSpaces();
   } else {
-    console.error('Failed to update space:', error.message);
+  // ...removed error logging...
   }
 }

@@ -12,6 +12,7 @@ import { addTaskItem, updateTaskItem, deleteTaskItem } from '$lib/stores/taskIte
 import ProjectsPropertiesForm from '$lib/components/ProjectsPropertiesForm.svelte';
 import TaskList from '$lib/components/TaskList.svelte';
 import TaskItemList from '$lib/components/TaskItemList.svelte';
+// Removed duplicate import of toastStore
 import HeaderBar from '$lib/components/HeaderBar.svelte';
 import ActivityBar from '$lib/components/ActivityBar.svelte';
 import SidebarAccordion from '$lib/components/SidebarAccordion.svelte';
@@ -21,7 +22,7 @@ import ToastContainer from '$lib/components/ToastContainer.svelte';
 import LoginModal from '$lib/components/LoginModal.svelte';
 import SpaceSelector from '$lib/components/SpaceSelector.svelte';
 import { spaces, spacesLoading, spacesError, fetchSpaces } from '$lib/stores/spaces';
-import { supabase } from '$lib/supabaseClient.js';
+import { supabase } from '$lib/supabaseClient';
 import { projects as projectsStore, projectsLoading, projectsError, fetchProjects } from '$lib/stores/projects';
 import { projects, addProject, updateProject, deleteProject } from '$lib/stores/projects';
 import { onMount } from 'svelte';
@@ -84,7 +85,9 @@ function getRandom(arr) {
 onMount(() => {
 	(async () => {
 		const { data: { session } } = await supabase.auth.getSession();
+	// ...removed debug logging...
 		if (session && session.user) {
+			// ...removed debug logging...
 			user.set({
 				email: session.user.email ?? "",
 				username: session.user.user_metadata?.username ?? session.user.email?.split('@')[0] ?? ""
@@ -97,10 +100,15 @@ onMount(() => {
 			} else {
 				taskItems.set([]);
 			}
+		} else {
+			// ...removed debug logging...
+			loggedIn.set(false);
 		}
 		// Listen for auth state changes
-		supabase.auth.onAuthStateChange((_event: any, session: any) => {
+		supabase.auth.onAuthStateChange((event: any, session: any) => {
+			// ...removed debug logging...
 			if (session && session.user) {
+				// ...removed debug logging...
 				user.set({
 					email: session.user.email ?? "",
 					username: session.user.user_metadata?.username ?? session.user.email?.split('@')[0] ?? ""
@@ -112,6 +120,7 @@ onMount(() => {
 					taskItems.set([]);
 				}
 			} else {
+				// ...removed debug logging...
 				user.set(null);
 				loggedIn.set(false);
 				tasks.set([]);
@@ -125,8 +134,14 @@ onMount(() => {
 	const keyHandler = (e: KeyboardEvent) => {
 		if (e.ctrlKey && (e.key === '`' || e.key === '~')) {
 			e.preventDefault();
-			terminalOpen.set(!$terminalOpen);
 			if ($terminalOpen) {
+				// If already open, just focus input
+				setTimeout(() => {
+					const input = document.getElementById('atlas-terminal-input');
+					if (input) input.focus();
+				}, 0);
+			} else {
+				terminalOpen.set(true);
 				setTimeout(() => {
 					const input = document.getElementById('atlas-terminal-input');
 					if (input) input.focus();
@@ -203,7 +218,7 @@ function handleSelectProject(id: string) {
 
 import { get } from 'svelte/store';
 onMount(() => {
-	console.log('[Atlas] onMount: restoring selection from localStorage');
+	// ...removed debug logging...
 	const storedSpaceId = localStorage.getItem('selectedSpaceId');
 	const storedProjectId = localStorage.getItem('selectedProjectId');
 	const storedTaskId = localStorage.getItem('selectedTaskId');
@@ -508,18 +523,26 @@ function closeLogin() {
 				terminalLines.set([...$terminalLines, { text: out.trim(), type: 'info', blurred: false }]);
 				return;
 			}
-			// sel n: drill into space details
-			if (args[0].toLowerCase() === 'sel' && args[1]) {
-				const n = parseInt(args[1]);
-				if (!spacesArr || isNaN(n) || n < 1 || n > spacesArr.length) {
-					terminalLines.set([...$terminalLines, { text: 'Invalid space number.', type: 'error', blurred: false }]);
-					return;
-				}
-				const selected = spacesArr[n - 1];
-				pushCliContext('spaces', { level: 'spaceDetails', space: selected });
-				terminalLines.set([...$terminalLines, { text: `Selected: ${selected.name}\nType 'fields' to list fields, 'back' to return.`, type: 'success', blurred: false }]);
-				return;
-			}
+			   // sel n: drill into space details
+			   if ((args[0].toLowerCase() === 'sel' && args[1]) || (!isNaN(Number(args[0])) && args.length === 1)) {
+				   // Support both 'sel n' and just 'n' for selection
+				   const n = args[0].toLowerCase() === 'sel' ? parseInt(args[1]) : parseInt(args[0]);
+				   if (!spacesArr || isNaN(n) || n < 1 || n > spacesArr.length) {
+					   terminalLines.set([...$terminalLines, { text: 'Invalid space number.', type: 'error', blurred: false }]);
+					   return;
+				   }
+				   const selected = spacesArr[n - 1];
+				   pushCliContext('spaces', { level: 'spaceDetails', space: selected });
+				   // Show all fields as pretty JSON with line numbers
+				   const fields = Object.entries(selected);
+				   let out = `Selected: ${selected.name}\nFields:`;
+				   fields.forEach(([key, value], i) => {
+					   out += `\n${i + 1}. \x1b[36m${key}\x1b[0m: ${JSON.stringify(value)}`;
+				   });
+				   out += `\n\nType the number to select a field, or 'back' to return.`;
+				   terminalLines.set([...$terminalLines, { text: out, type: 'success', blurred: false }]);
+				   return;
+			   }
 			// add -d "Title"
 			if (args[0].toLowerCase() === 'add') {
 				if (args[1] && args[1] === '-d' && args[2]) {
@@ -552,22 +575,19 @@ function closeLogin() {
 				terminalLines.set([...$terminalLines, { text: out, type: 'info', blurred: false }]);
 				return;
 			}
-			// sel n: select field
-			if (args[0].toLowerCase() === 'sel' && args[1]) {
-				const n = parseInt(args[1]);
-				if (n === 1) {
-					pushCliContext('spaces', { level: 'fieldDetails', space, field: 'name' });
-					terminalLines.set([...$terminalLines, { text: `Field: name\nCurrent value: ${space.name}\nType 'edit "NewName"' to change, or 'back' to return.`, type: 'info', blurred: false }]);
-					return;
-				} else if (n === 2) {
-					pushCliContext('spaces', { level: 'fieldDetails', space, field: 'order' });
-					terminalLines.set([...$terminalLines, { text: `Field: order\nCurrent value: ${space.order ?? '-'}\nType 'edit <number>' to change, or 'back' to return.`, type: 'info', blurred: false }]);
-					return;
-				} else {
-					terminalLines.set([...$terminalLines, { text: 'Invalid field number.', type: 'error', blurred: false }]);
-					return;
-				}
-			}
+			   // sel n: select field, or just a number to select a field
+			   if ((args[0].toLowerCase() === 'sel' && args[1]) || (!isNaN(Number(args[0])) && args.length === 1)) {
+				   const n = args[0].toLowerCase() === 'sel' ? parseInt(args[1]) : parseInt(args[0]);
+				   const fields = Object.entries(space);
+				   if (isNaN(n) || n < 1 || n > fields.length) {
+					   terminalLines.set([...$terminalLines, { text: 'Invalid field number.', type: 'error', blurred: false }]);
+					   return;
+				   }
+				   const [field, value] = fields[n - 1];
+				   pushCliContext('spaces', { level: 'fieldDetails', space, field });
+				   terminalLines.set([...$terminalLines, { text: `Field: ${field}\nCurrent value: ${JSON.stringify(value)}\nType 'edit <value>' to change, or 'back' to return.`, type: 'info', blurred: false }]);
+				   return;
+			   }
 			if (args[0].toLowerCase() === 'back' || args[0].toLowerCase() === 'exit') {
 				popCliContext();
 				return;
@@ -654,7 +674,7 @@ registerCliHandler('spaces', spacesCliHandler);
 								/>
 							{:else if $propertiesPanelType === 'taskItem'}
 								<TaskItemsPropertiesForm
-									item={$propertiesPanelEntity}
+									item={($propertiesPanelType === 'taskItem' && $propertiesPanelEntity && 'task_id' in $propertiesPanelEntity) ? $propertiesPanelEntity : null}
 									onUpdate={updateTaskItem}
 									onDelete={deleteTaskItem}
 								/>
@@ -691,6 +711,24 @@ registerCliHandler('spaces', spacesCliHandler);
 									loading={$taskItemsLoading}
 									error={$taskItemsError}
 									on:taskItemEditClick={e => openPropertiesPanel('taskItem', e.detail)}
+									on:taskItemPrintClick={async e => {
+										const item = e.detail;
+										try {
+											const res = await fetch('/api/print-task-item', {
+												method: 'POST',
+												headers: { 'Content-Type': 'application/json' },
+												body: JSON.stringify({ name: item.name, description: item.description })
+											});
+											const result = await res.json();
+											if (result.success) {
+												toastStore.show('Sent to printer!', 'success');
+											} else {
+												toastStore.show('Printer error: ' + (result.error || 'Unknown error'), 'error');
+											}
+										} catch (err) {
+											toastStore.show('Printer error: ' + err.message, 'error');
+										}
+									}}
 								/>
 								<!-- {@render children()} -->
 							</section>
