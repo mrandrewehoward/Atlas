@@ -53,6 +53,68 @@ import { addSpace, deleteSpace, updateSpace } from '$lib/stores/spaces';
 import { registerCliHandler } from '$lib/cli/cliParser';
 import { spacesCliHandler } from '$lib/cli/spacesCliHandler';
 
+import Icon from '@iconify/svelte';
+import { writable, get } from 'svelte/store';
+
+// Centralized selection state
+const selectedProjectIdsGlobal = writable<Set<string>>(new Set());
+const selectedTaskIdsGlobal = writable<Set<string>>(new Set());
+const selectedItemIdsGlobal = writable<Set<string | number>>(new Set());
+
+// Handlers for selection updates from child lists
+function handleUpdateSelectedProjects(ids: string[]) {
+	selectedProjectIdsGlobal.set(new Set(ids));
+}
+function handleUpdateSelectedTasks(ids: string[]) {
+	selectedTaskIdsGlobal.set(new Set(ids));
+}
+function handleUpdateSelectedItems(ids: (string | number)[]) {
+	selectedItemIdsGlobal.set(new Set(ids));
+}
+
+// Unified print handler
+async function handlePrintSelected() {
+	const projectsArr = get(projectsStore).filter(p => get(selectedProjectIdsGlobal).has(p.id));
+	const tasksArr = get(tasks).filter(t => get(selectedTaskIdsGlobal).has(t.id));
+	const itemsArr = get(taskItems).filter(i => get(selectedItemIdsGlobal).has(i.id));
+	const allToPrint = [...projectsArr, ...tasksArr, ...itemsArr];
+	if (allToPrint.length === 0) return;
+	try {
+		const res = await fetch('/api/print-task-item', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ entities: allToPrint })
+		});
+		const result = await res.json();
+		if (result.success) {
+			toastStore.show('Sent to printer!', 'success');
+		} else {
+			toastStore.show('Printer error: ' + (result.error || 'Unknown error'), 'error');
+		}
+	} catch (err) {
+		toastStore.show('Printer error: ' + err.message, 'error');
+	}
+}
+	
+// Print a single entity (project, task, or item)
+async function handlePrintSingleEntity(entity) {
+	try {
+		const res = await fetch('/api/print-task-item', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(entity)
+		});
+		const result = await res.json();
+		if (result.success) {
+			toastStore.show('Sent to printer!', 'success');
+		} else {
+			toastStore.show('Printer error: ' + (result.error || 'Unknown error'), 'error');
+		}
+	} catch (err) {
+		toastStore.show('Printer error: ' + err.message, 'error');
+	}
+}
+
 // Universal CLI fun/utility messages (moved to module scope)
 const motds = [
 	"Welcome to Atlas! Stay curious.",
@@ -186,15 +248,19 @@ function handleToggleProject(id: string) {
 	selectedProjectIds.set(new Set(ids));
 }
 
-function handleToggleTask(id: string) {
-	if ($selectedTaskId === id) {
+function handleToggleTask(task) {
+	if (!task || typeof task.id !== 'string') {
+		console.error('[Atlas][ERROR] Invalid task object received:', task);
+		return;
+	}
+	if ($selectedTaskId === task.id) {
 		selectedTaskId.set(null);
 		localStorage.removeItem('selectedTaskId');
 		taskItems.set([]);
 	} else {
-		selectedTaskId.set(id);
-		localStorage.setItem('selectedTaskId', id);
-		fetchTaskItems(id);
+		selectedTaskId.set(task.id);
+		localStorage.setItem('selectedTaskId', task.id);
+		fetchTaskItems(task.id);
 	}
 }
 function handleSelectSpace(id: string) {
@@ -211,12 +277,16 @@ function handleSelectSpace(id: string) {
 }
 
 // Select a project and load its tasks (used by ProjectList on:select)
-function handleSelectProject(id: string) {
-	selectedProjectId.set(id);
-	fetchTasks(id);
+function handleSelectProject(project) {
+	if (!project || typeof project.id !== 'string') {
+		console.error('[Atlas][ERROR] Invalid project object received:', project);
+		return;
+	}
+	selectedProjectId.set(project.id);
+	fetchTasks(project.id);
 }
 
-import { get } from 'svelte/store';
+
 onMount(() => {
 	// ...removed debug logging...
 	const storedSpaceId = localStorage.getItem('selectedSpaceId');
@@ -630,6 +700,15 @@ registerCliHandler('spaces', spacesCliHandler);
 	<!-- Header -->
 	<HeaderBar loggedIn={$loggedIn} onLogin={() => openLogin(false)} onLogout={logout} />
 	<!-- Main layout row: Activity bar, sidebar, main, panel -->
+	{#if $selectedProjectIdsGlobal.size > 0 || $selectedTaskIdsGlobal.size > 0 || $selectedItemIdsGlobal.size > 0}
+		<div class="fixed left-8 bottom-32 z-50 flex flex-col items-start">
+			<button class="btn btn-primary btn-lg shadow-lg flex items-center gap-2" onclick={handlePrintSelected} aria-label="Print selected entities">
+				<Icon icon="material-symbols:print-outline" width="24" height="24" />
+				Print Selected
+				<span class="badge badge-info ml-2">{$selectedProjectIdsGlobal.size + $selectedTaskIdsGlobal.size + $selectedItemIdsGlobal.size}</span>
+			</button>
+		</div>
+	{/if}
 	<div class="flex flex-1 min-h-0">
 		<!-- Activity Bar -->
 					<SpaceSelector selectedId={$selectedSpaceId} loggedIn={$loggedIn} on:select={e => handleSelectSpace(e.detail)} />
@@ -645,11 +724,13 @@ registerCliHandler('spaces', spacesCliHandler);
 					{:else}
 											<ProjectList
 												projects={$projectsStore}
-												selectedId={$selectedProjectId}
+												selectedProjects={$selectedProjectIdsGlobal}
 												loading={$projectsLoading}
 												error={$projectsError}
 												on:projectEditClick={e => openPropertiesPanel('project', e.detail)}
 												on:select={e => handleSelectProject(e.detail)}
+												on:updateSelected={e => handleUpdateSelectedProjects(e.detail)}
+												on:projectPrintClick={e => handlePrintSingleEntity(e.detail)}
 											/>
 
 						<!-- Global entity properties panel -->
@@ -698,37 +779,23 @@ registerCliHandler('spaces', spacesCliHandler);
 							<section class="flex-1 min-w-0 border-r border-base-300 bg-base-100 flex flex-col p-0">
 								<TaskList
 									tasks={$tasks}
-									selectedId={$selectedTaskId}
+									selectedTasks={$selectedTaskIdsGlobal}
 									loading={$tasksLoading}
 									error={$tasksError}
 									on:taskEditClick={e => openPropertiesPanel('task', e.detail)}
 									on:select={e => handleToggleTask(e.detail)}
+									on:updateSelected={e => handleUpdateSelectedTasks(e.detail)}
+									on:taskPrintClick={e => handlePrintSingleEntity(e.detail)}
 								/>
 							</section>
 							<section class="flex-1 min-w-0 bg-base-100 flex flex-col p-0">
 								<TaskItemList
-									items={$taskItems}
-									loading={$taskItemsLoading}
-									error={$taskItemsError}
-									on:taskItemEditClick={e => openPropertiesPanel('taskItem', e.detail)}
-									on:taskItemPrintClick={async e => {
-										const item = e.detail;
-										try {
-											const res = await fetch('/api/print-task-item', {
-												method: 'POST',
-												headers: { 'Content-Type': 'application/json' },
-												body: JSON.stringify({ name: item.name, description: item.description })
-											});
-											const result = await res.json();
-											if (result.success) {
-												toastStore.show('Sent to printer!', 'success');
-											} else {
-												toastStore.show('Printer error: ' + (result.error || 'Unknown error'), 'error');
-											}
-										} catch (err) {
-											toastStore.show('Printer error: ' + err.message, 'error');
-										}
-									}}
+																items={$taskItems}
+																selectedItems={$selectedItemIdsGlobal}
+																loading={$taskItemsLoading}
+																error={$taskItemsError}
+																on:taskItemEditClick={e => openPropertiesPanel('taskItem', e.detail)}
+																on:updateSelected={e => handleUpdateSelectedItems(e.detail)}
 								/>
 								<!-- {@render children()} -->
 							</section>

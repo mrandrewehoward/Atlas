@@ -1,7 +1,20 @@
 <script lang="ts">
 import Icon from '@iconify/svelte';
-export let items: Array<{ id: number|string; name: string; icon?: string; color?: string; priority?: 'low' | 'medium' | 'high' | null; status?: string; description?: string; created_at?: string }> = [];
 import { createEventDispatcher } from 'svelte';
+export let items: Array<{ id: number|string; name: string; icon?: string; color?: string; priority?: 'low' | 'medium' | 'high' | null; status?: string; description?: string; created_at?: string }> = [];
+
+function toggleSelect(id: string|number) {
+  if (selectedItems.has(id)) selectedItems.delete(id);
+  else selectedItems.add(id);
+  selectedItems = new Set(selectedItems);
+  dispatch('updateSelected', Array.from(selectedItems));
+}
+
+function printSelected() {
+  const toPrint = items.filter(i => selectedItems.has(i.id));
+  dispatch('printSelected', toPrint);
+}
+export let selectedItems: Set<string|number> = new Set();
 const dispatch = createEventDispatcher();
 // Removed unused export properties per Svelte warning. Add as export const if needed for external reference only.
 // export const onDelete: (id: number|string) => void = () => {};
@@ -37,60 +50,63 @@ function toggleExpand(id: number|string) {
   {:else}
     <ul class="flex flex-col divide-y divide-base-300 bg-base-100">
       {#each items as item}
-        <li class="group flex items-center px-0 h-9 relative">
-          <div class="flex items-center w-full h-9 px-3 cursor-pointer select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left">
-            <span class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2">{item.name.length > 30 ? item.name.slice(0, 30) + '\u2026' : item.name}</span>
-            <span class="flex-1"></span>
-            <div class="flex flex-row items-center gap-2 min-w-[120px] justify-end">
-              <span class="w-9 flex items-center justify-center px-1">
-                {#if item.priority === 'low'}
-                  <Icon icon="material-symbols-light:stat-1" width="18" height="18" class="text-green-500" />
-                {:else if item.priority === 'medium'}
-                  <Icon icon="material-symbols-light:stat-2" width="18" height="18" class="text-yellow-400" />
-                {:else if item.priority === 'high'}
-                  <Icon icon="material-symbols-light:stat-3" width="18" height="18" class="text-red-500" />
-                {:else}
-                  <Icon icon="material-symbols-light:stat-0-outline-rounded" width="18" height="18" class="text-base-300" />
-                {/if}
-              </span>
-              <span class="w-9 flex items-center justify-center px-1">
-                {#if item.icon}
-                  <span class="inline-flex items-center justify-center w-6 h-6 rounded-full border border-base-300" style={item.color ? `background:${item.color};` : ''}>
-                    <Icon icon={item.icon} width="18" height="18" style={item.color ? 'color: #fff' : ''} />
+          {#if item && item.name}
+            <li class="group flex items-center px-0 h-9 relative">
+              <div class="flex items-center w-full h-9 px-3 select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left">
+                <input type="checkbox" class="checkbox checkbox-xs mr-2" checked={selectedItems.has(item.id)} on:change={() => toggleSelect(item.id)} />
+                <span class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2">{item.name.length > 30 ? item.name.slice(0, 30) + '\u2026' : item.name}</span>
+                <span class="flex-1"></span>
+                <div class="flex flex-row items-center gap-2 min-w-[120px] justify-end">
+                  <span class="w-9 flex items-center justify-center px-1">
+                    {#if item.priority === 'low'}
+                      <Icon icon="material-symbols-light:stat-1" width="18" height="18" class="text-green-500" />
+                    {:else if item.priority === 'medium'}
+                      <Icon icon="material-symbols-light:stat-2" width="18" height="18" class="text-yellow-400" />
+                    {:else if item.priority === 'high'}
+                      <Icon icon="material-symbols-light:stat-3" width="18" height="18" class="text-red-500" />
+                    {:else}
+                      <Icon icon="material-symbols-light:stat-0-outline-rounded" width="18" height="18" class="text-base-300" />
+                    {/if}
                   </span>
-                {:else if item.color}
-                  <span class="w-4 h-4 rounded-full border-2 border-base-300" style={`background:${item.color}`}></span>
-                {:else}
-                  <Icon icon="material-symbols-light:circle" width="18" height="18" style="opacity:0;" />
-                {/if}
-              </span>
-              <span class="w-8 flex items-center justify-center">
-                <button
-                  class="btn btn-xs btn-ghost inline-flex items-center justify-center !px-1 !py-0.5 rounded"
-                  style="min-width:unset;width:24px;height:24px;"
-                  aria-label="Print item"
-                  title="Print item"
-                  tabindex="0"
-                  on:click|stopPropagation={() => dispatch('taskItemPrintClick', item)}
-                >
-                  <Icon icon="material-symbols:print-outline" width="18" height="18" />
-                </button>
-              </span>
-              <span class="w-8 flex items-center justify-end pl-1 pr-1">
-                <button
-                  class="btn btn-xs btn-ghost inline-flex items-center justify-center !px-1 !py-0.5 rounded"
-                  style="min-width:unset;width:24px;height:24px;"
-                  aria-label="Edit item"
-                  title="Edit item"
-                  tabindex="0"
-                  on:click|stopPropagation={() => dispatch('taskItemEditClick', item)}
-                >
-                  <Icon icon="material-symbols-light:edit" width="18" height="18" />
-                </button>
-              </span>
-            </div>
-          </div>
-        </li>
+                  <span class="w-9 flex items-center justify-center px-1">
+                    {#if item.icon}
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full border border-base-300" style={item.color ? `background:${item.color};` : ''}>
+                        <Icon icon={item.icon} width="18" height="18" style={item.color ? 'color: #fff' : ''} />
+                      </span>
+                    {:else if item.color}
+                      <span class="w-4 h-4 rounded-full border-2 border-base-300" style={`background:${item.color}`}></span>
+                    {:else}
+                      <Icon icon="material-symbols-light:circle" width="18" height="18" style="opacity:0;" />
+                    {/if}
+                  </span>
+                  <span class="w-8 flex items-center justify-center">
+                    <button
+                      class="btn btn-xs btn-ghost inline-flex items-center justify-center !px-1 !py-0.5 rounded"
+                      style="min-width:unset;width:24px;height:24px;"
+                      aria-label="Print item"
+                      title="Print item"
+                      tabindex="0"
+                      on:click|stopPropagation={() => dispatch('taskItemPrintClick', item)}
+                    >
+                      <Icon icon="material-symbols:print-outline" width="18" height="18" />
+                    </button>
+                  </span>
+                  <span class="w-8 flex items-center justify-end pl-1 pr-1">
+                    <button
+                      class="btn btn-xs btn-ghost inline-flex items-center justify-center !px-1 !py-0.5 rounded"
+                      style="min-width:unset;width:24px;height:24px;"
+                      aria-label="Edit item"
+                      title="Edit item"
+                      tabindex="0"
+                      on:click|stopPropagation={() => dispatch('taskItemEditClick', item)}
+                    >
+                      <Icon icon="material-symbols-light:edit" width="18" height="18" />
+                    </button>
+                  </span>
+                </div>
+              </div>
+            </li>
+          {/if}
       {/each}
     </ul>
   {/if}

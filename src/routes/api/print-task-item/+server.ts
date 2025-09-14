@@ -5,16 +5,20 @@ import { execFile } from 'child_process';
 
 export const POST: RequestHandler = async ({ request }) => {
   const data = await request.json();
-  // Use name/description, fallback to title/description
-  const task = {
-    title: data.name || data.title || 'Task',
-    description: data.description || ''
-  };
+  // Accept an array of entities (from data.entities), fallback to single object
+  let entities = [];
+  if (Array.isArray(data.entities)) {
+    entities = data.entities;
+  } else if (data.entities) {
+    entities = [data.entities];
+  } else if (data.name || data.title) {
+    entities = [{ title: data.name || data.title || 'Task', description: data.description || '' }];
+  }
 
   return new Promise((resolve) => {
     execFile(
       'node',
-      ['print-task-item.cjs', JSON.stringify(task)],
+      ['print-task-item.cjs', JSON.stringify(entities)],
       { cwd: process.cwd() },
       (error, stdout, stderr) => {
         console.log('[Atlas][API][PRINT] stdout:', stdout);

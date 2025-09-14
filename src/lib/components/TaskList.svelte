@@ -1,12 +1,23 @@
 <script lang="ts">
 import Icon from '@iconify/svelte';
-  export let tasks: Array<{ id: string; name: string; icon?: string; color?: string; priority?: 'low' | 'medium' | 'high' | null; status?: string }> = [];
-  export let selectedId: string | null = null;
-  import { createEventDispatcher } from 'svelte';
-  const dispatch = createEventDispatcher();
-  // Removed unused export lets onDelete and onToggle
-  export let loading: boolean = false;
-  export let error: string = '';
+import { createEventDispatcher } from 'svelte';
+export let tasks: Array<{ id: string; name: string; icon?: string; color?: string; priority?: 'low' | 'medium' | 'high' | null; status?: string }> = [];
+export let selectedTasks: Set<string> = new Set();
+export let loading: boolean = false;
+export let error: string = '';
+const dispatch = createEventDispatcher();
+
+function toggleSelect(id: string) {
+  if (selectedTasks.has(id)) selectedTasks.delete(id);
+  else selectedTasks.add(id);
+  selectedTasks = new Set(selectedTasks);
+  dispatch('updateSelected', Array.from(selectedTasks));
+}
+
+function printSelected() {
+  const toPrint = tasks.filter(t => selectedTasks.has(t.id));
+  dispatch('printSelected', toPrint);
+}
 </script>
 
 <section class="flex flex-col h-full bg-base-100 border-t border-b border-l border-base-300">
@@ -14,11 +25,11 @@ import Icon from '@iconify/svelte';
     Tasks
   </div>
   <div class="flex items-center px-3 h-6 border-b border-base-200 bg-base-100 text-base-content text-[10px] tracking-widest select-none font-semibold opacity-40">
-  <span class="w-[120px] flex-shrink-0 flex-grow-0 ml-2 text-left">Name</span>
+    <span class="w-[120px] flex-shrink-0 flex-grow-0 ml-2 text-left">Name</span>
     <span class="flex-1"></span>
     <div class="flex flex-row items-center gap-2 min-w-[120px] justify-end">
-  <span class="w-8 text-center px-1" title="Icon" aria-label="Icon">I</span>
-  <span class="w-8 text-center px-1" title="Priority" aria-label="Priority">P</span>
+      <span class="w-8 text-center px-1" title="Icon" aria-label="Icon">I</span>
+      <span class="w-8 text-center px-1" title="Priority" aria-label="Priority">P</span>
       <span class="w-8 text-right px-1"></span>
     </div>
   </div>
@@ -31,18 +42,20 @@ import Icon from '@iconify/svelte';
   {:else}
     <ul class="flex flex-col divide-y divide-base-300 bg-base-100">
       {#each tasks as task}
+        {#if task && task.name}
         <li class="group flex items-center px-0 h-9 relative">
-          <div class="flex items-center w-full h-9 px-3 cursor-pointer select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left {selectedId === task.id ? 'font-extrabold text-emerald-700' : ''}"
-            tabindex="0"
-            role="button"
-            aria-label={`Select task ${task.name}`}
-            on:click={() => dispatch('select', task.id)}
-            on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch('select', task.id)}
-          >
-            <span class="w-6 flex items-center justify-center">
-              <input type="checkbox" tabindex="-1" class="checkbox checkbox-xs" aria-label="Select task" checked={selectedId === task.id} readonly />
+          <div class="flex items-center w-full h-9 px-3 select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left">
+            <input type="checkbox" class="checkbox checkbox-xs mr-2" checked={selectedTasks.has(task.id)} on:change={() => toggleSelect(task.id)} />
+            <span
+              class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2 cursor-pointer hover:underline focus:outline-none focus:ring-2 focus:ring-primary"
+              on:click={() => dispatch('select', task)}
+              on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch('select', task)}
+              tabindex="0"
+              role="button"
+              aria-label={`Load items for ${task.name}`}
+            >
+              {task.name.length > 30 ? task.name.slice(0, 30) + '\u2026' : task.name}
             </span>
-            <span class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2 {selectedId === task.id ? 'font-extrabold text-emerald-700' : ''}">{task.name.length > 30 ? task.name.slice(0, 30) + '…' : task.name}</span>
             <span class="flex-1"></span>
             <div class="flex flex-row items-center gap-2 min-w-[120px] justify-end">
               <span class="w-9 flex items-center justify-center px-1">
@@ -78,10 +91,21 @@ import Icon from '@iconify/svelte';
                 >
                   <Icon icon="material-symbols-light:edit" width="18" height="18" />
                 </button>
+                <button
+                  class="btn btn-xs btn-ghost inline-flex items-center justify-center !px-1 !py-0.5 rounded"
+                  style="min-width:unset;width:24px;height:24px;"
+                  aria-label="Print task"
+                  title="Print task"
+                  tabindex="0"
+                  on:click|stopPropagation={() => dispatch('taskPrintClick', task)}
+                >
+                  <Icon icon="material-symbols:print-outline" width="18" height="18" />
+                </button>
               </span>
             </div>
           </div>
         </li>
+        {/if}
       {/each}
     </ul>
   {/if}
