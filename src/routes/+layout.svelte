@@ -61,6 +61,13 @@ const selectedProjectIdsGlobal = writable<Set<string>>(new Set());
 const selectedTaskIdsGlobal = writable<Set<string>>(new Set());
 const selectedItemIdsGlobal = writable<Set<string | number>>(new Set());
 
+// Clear selection for Print/Clear button
+function clearSelection() {
+	selectedProjectIdsGlobal.set(new Set());
+	selectedTaskIdsGlobal.set(new Set());
+	selectedItemIdsGlobal.set(new Set());
+}
+
 // Handlers for selection updates from child lists
 function handleUpdateSelectedProjects(ids: string[]) {
 	selectedProjectIdsGlobal.set(new Set(ids));
@@ -700,15 +707,6 @@ registerCliHandler('spaces', spacesCliHandler);
 	<!-- Header -->
 	<HeaderBar loggedIn={$loggedIn} onLogin={() => openLogin(false)} onLogout={logout} />
 	<!-- Main layout row: Activity bar, sidebar, main, panel -->
-	{#if $selectedProjectIdsGlobal.size > 0 || $selectedTaskIdsGlobal.size > 0 || $selectedItemIdsGlobal.size > 0}
-		<div class="fixed left-8 bottom-32 z-50 flex flex-col items-start">
-			<button class="btn btn-primary btn-lg shadow-lg flex items-center gap-2" onclick={handlePrintSelected} aria-label="Print selected entities">
-				<Icon icon="material-symbols:print-outline" width="24" height="24" />
-				Print Selected
-				<span class="badge badge-info ml-2">{$selectedProjectIdsGlobal.size + $selectedTaskIdsGlobal.size + $selectedItemIdsGlobal.size}</span>
-			</button>
-		</div>
-	{/if}
 	<div class="flex flex-1 min-h-0">
 		<!-- Activity Bar -->
 					<SpaceSelector selectedId={$selectedSpaceId} loggedIn={$loggedIn} on:select={e => handleSelectSpace(e.detail)} />
@@ -807,6 +805,20 @@ registerCliHandler('spaces', spacesCliHandler);
 						</div>
 					</div>
 			<!-- Terminal Panel always at the bottom -->
+	<!-- Print Selected button above the terminal, right-aligned, slides with terminal -->
+	{#if $selectedProjectIdsGlobal.size > 0 || $selectedTaskIdsGlobal.size > 0 || $selectedItemIdsGlobal.size > 0}
+		<div style="position: absolute; right: 2rem; bottom: 7.5rem; z-index: 50;" class="flex flex-row items-end gap-2">
+			<button class="btn btn-primary btn-lg shadow-lg flex items-center gap-2" onclick={handlePrintSelected} aria-label="Print selected entities">
+				<Icon icon="material-symbols:print-outline" width="24" height="24" />
+				Print Selected
+				<span class="badge badge-info ml-2">{$selectedProjectIdsGlobal.size + $selectedTaskIdsGlobal.size + $selectedItemIdsGlobal.size}</span>
+			</button>
+			<button class="btn btn-ghost btn-lg flex items-center gap-2" onclick={clearSelection} aria-label="Clear selected entities">
+				<Icon icon="material-symbols:close" width="24" height="24" />
+				Clear
+			</button>
+		</div>
+	{/if}
 				<TerminalPanel
 					lines={$terminalLines}
 					input={$terminalInput}
