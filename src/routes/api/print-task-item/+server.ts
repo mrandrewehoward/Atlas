@@ -17,7 +17,10 @@ export const POST: RequestHandler = async ({ request }) => {
       ['print-task-item.cjs', JSON.stringify(task)],
       { cwd: process.cwd() },
       (error, stdout, stderr) => {
+        console.log('[Atlas][API][PRINT] stdout:', stdout);
+        console.log('[Atlas][API][PRINT] stderr:', stderr);
         if (error) {
+          console.error('[Atlas][API][PRINT][ERROR]', error);
           resolve(json({ success: false, error: stderr || error.message }, { status: 500 }));
         } else {
           resolve(json({ success: true, output: stdout }));
