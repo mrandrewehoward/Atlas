@@ -46,16 +46,15 @@ function printSelected() {
         <li class="group flex items-center px-0 h-9 relative">
           <div class="flex items-center w-full h-9 px-3 select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left">
             <input type="checkbox" class="checkbox checkbox-xs mr-2" checked={selectedTasks.has(task.id)} on:change={() => toggleSelect(task.id)} />
-            <span
-              class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2 cursor-pointer hover:underline focus:outline-none focus:ring-2 focus:ring-primary"
+            <button
+              type="button"
+              class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2 cursor-pointer hover:underline focus:outline-none focus:ring-2 focus:ring-primary text-left"
               on:click={() => dispatch('select', task)}
-              on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch('select', task)}
-              tabindex="0"
-              role="button"
               aria-label={`Load items for ${task.name}`}
+              title={`Load items for ${task.name}`}
             >
               {task.name.length > 30 ? task.name.slice(0, 30) + '\u2026' : task.name}
-            </span>
+            </button>
             <span class="flex-1"></span>
             <div class="flex flex-row items-center gap-2 min-w-[120px] justify-end">
               <span class="w-9 flex items-center justify-center px-1">

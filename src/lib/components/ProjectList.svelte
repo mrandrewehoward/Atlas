@@ -53,16 +53,15 @@
           <li class="group flex items-center px-0 h-9 relative">
             <div class="flex items-center w-full h-9 px-3 select-none hover:bg-base-200 focus:bg-base-200 transition-all text-left">
               <input type="checkbox" class="checkbox checkbox-xs mr-2" checked={selectedProjects.has(project.id)} on:change={() => toggleSelect(project.id)} />
-              <span
-                class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2 cursor-pointer hover:underline focus:outline-none focus:ring-2 focus:ring-primary"
+              <button
+                type="button"
+                class="w-[200px] flex-shrink-0 flex-grow-0 truncate font-medium text-base-content ml-2 cursor-pointer hover:underline focus:outline-none focus:ring-2 focus:ring-primary text-left"
                 on:click={() => dispatch('select', project)}
-                on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch('select', project)}
-                tabindex="0"
-                role="button"
                 aria-label={`Load tasks for ${project.name}`}
+                title={`Load tasks for ${project.name}`}
               >
                 {project.name.length > 30 ? project.name.slice(0, 30) + '\u2026' : project.name}
-              </span>
+              </button>
               <span class="flex-1"></span>
               <div class="flex flex-row items-center gap-2 min-w-[60px] justify-end">
                 <span class="w-8 flex items-center justify-end pl-1 pr-1">
