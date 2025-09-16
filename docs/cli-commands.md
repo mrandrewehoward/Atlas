@@ -39,36 +39,38 @@ This document describes the CLI/terminal command system for Atlas Workbench, inc
 | Command                              | Description                                                      |
 |--------------------------------------|------------------------------------------------------------------|
 | `ls`                                 | List all spaces (numbered)                                       |
-| `sel n`                              | Select space by number                                           |
+| `list` / `ls`                        | List all spaces (numbered)                                       |
+| `sel n` / `select n`                 | Select space by number (or use id/name)                          |
 | `fields`                             | List fields for the selected space                               |
 | `edit n`                             | Edit field n (prompts for value)                                 |
 | `edit n value`                       | Edit field n, set value directly                                 |
-| `add`                                | Add a new space (prompts for fields)                             |
-| `add -d "Title"`                     | Add a new space with name/title set to "Title"                   |
+| `add` / `create`                     | Add a new space (prompts for fields)                             |
+| `add -n "Title"`                    | Add a new space with name/title set to "Title"                 |
 | `order n up/down`                    | Move space n up or down in order                                 |
 | `del n`                              | Delete space n (prompts for confirmation)                        |
 | `stats n`                            | Show stats/details for space n                                   |
 | `fields`                             | List editable fields for the entity                              |
 | `set n field value`                  | Set a specific field for space n                                 |
 | `search term`                        | Search spaces by name or field                                   |
-| `back`                               | Return to top-level command prompt                               |
-| `exit`                               | Exit the CLI terminal                                            |
+| `back` / `pop`                        | Return to previous context (drill-up)                            |
+| `exit` / `quit`                      | Exit the CLI terminal                                            |
 | `edit "Name" -set "NewName"`         | Edit space by name, set name directly                            |
 | `edit "Name" -o 2`                   | Edit space by name, set order to 2                               |
 
 ---
 
-## Example Interactions
+## Example Interactions (stateless and interactive)
 
 ```
-/spaces
-> ls
-1. Atlas
-2. Beta
-3. Gamma
+1) Stateless usage
 
-> sel 2
-Selected: Beta
+	/spaces list
+	1. Atlas
+	2. Beta
+	3. Gamma
+
+	/spaces sel 2
+	Selected: Beta
 
 > fields
 1. name
@@ -78,16 +80,31 @@ Selected: Beta
 Space name updated to 'New Beta Name'
 
 > edit 2
-Enter new value for order: 1
+1. name
+2. order
+Enter new value for option #: 2 -"1"
 Space order updated to 1
 
-> add -d "Delta"
-Space 'Delta' added.
+2) Interactive (drill-in)
 
-> add
-Enter name: Epsilon
-Enter order: 5
-Space 'Epsilon' added.
+	/spaces switch 2
+	[spaces:Beta] > list
+	1. Projects
+	2. Settings
+
+	[spaces:Beta] > add
+	Enter name: New Subspace
+	Enter order: 4
+	Space 'New Subspace' added.
+
+	[spaces:Beta] > edit 1
+	1. name
+	2. order
+	Enter new value for option #: 1 - "New Beta Name"
+	Space name updated to 'New Beta Name'
+
+	[spaces:Beta] > back
+	/
 
 > edit "Beta" -set "Beta 2"
 Space name updated to 'Beta 2'
@@ -120,14 +137,6 @@ Space order updated to 1
 - Polish CLI output formatting and UX
 
 ---
-
-## Accessibility & Svelte 5
-
-- All terminal output is accessible (aria-live, keyboard navigation, etc.)
-- Uses Svelte 5 runes for state management
-- No cyclical or duplicate state
-- No new lint or compile errors
-- Terminal panel can be resized or text size adjusted for usability
 
 ---
 
