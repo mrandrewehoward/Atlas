@@ -4,8 +4,11 @@ import Icon from '@iconify/svelte';
 export let onUpdate: ((item: TaskItem, updates: Partial<TaskItem>) => void) | null = null;
 export let onDelete: ((item: TaskItem) => void) | null = null;
 export let item: TaskItem | null = null;
+export let onAdd: ((name: string) => void) | null = null;
 
 let localOrder: string = item && item.order !== undefined && item.order !== null ? String(item.order) : '';
+let showQuickAdd = false;
+let quickAddName = '';
 
 function handleUpdate(updates: Partial<TaskItem>) {
   if (item && onUpdate) onUpdate(item, updates);
@@ -93,6 +96,18 @@ function handleDelete() {
       <Icon icon="material-symbols-light:delete-outline" width="16" height="16" />
       Delete
     </button>
+  </div>
+  <!-- Compact quick-add for items (useful when editing/inspecting items) -->
+  <div class="mt-3">
+    {#if !showQuickAdd}
+      <button class="btn btn-xs btn-outline" type="button" on:click={() => { showQuickAdd = true; setTimeout(() => { const el = document.getElementById('quick-add-item'); if (el) (el as HTMLInputElement).focus(); }, 0); }} aria-label="Add item">+ Add item</button>
+    {:else}
+      <div class="flex gap-2 items-center">
+        <input id="quick-add-item" class="input input-xs" type="text" bind:value={quickAddName} placeholder="New item name" on:keydown={(e) => { if (e.key === 'Enter') { if (quickAddName.trim() && onAdd) { onAdd(quickAddName.trim()); quickAddName = ''; showQuickAdd = false; } } if (e.key === 'Escape') { showQuickAdd = false; quickAddName = ''; } }} />
+        <button class="btn btn-xs btn-primary" type="button" on:click={() => { if (quickAddName.trim() && onAdd) { onAdd(quickAddName.trim()); quickAddName = ''; showQuickAdd = false; } }} aria-label="Confirm add">Add</button>
+        <button class="btn btn-xs btn-ghost" type="button" on:click={() => { showQuickAdd = false; quickAddName = ''; }} aria-label="Cancel add">Cancel</button>
+      </div>
+    {/if}
   </div>
 </form>
 {:else}

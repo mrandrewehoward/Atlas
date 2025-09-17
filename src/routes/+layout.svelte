@@ -50,6 +50,7 @@ import {
 import { toastStore } from '$lib/stores/toast';
 import type { Space } from '$lib/types';
 import { addSpace, deleteSpace, updateSpace } from '$lib/stores/spaces';
+import type { Task } from '$lib/types';
 import { registerCliHandler } from '$lib/cli/cliParser';
 import { spacesCliHandler } from '$lib/cli/spacesCliHandler';
 
@@ -741,12 +742,34 @@ registerCliHandler('spaces', spacesCliHandler);
 							{#if $propertiesPanelType === 'project'}
 								<ProjectsPropertiesForm
 									project={$propertiesPanelType === 'project' && $propertiesPanelEntity && 'space_id' in $propertiesPanelEntity ? $propertiesPanelEntity : null}
-									onUpdate={updateProject}
-									onDelete={deleteProject}
+									onUpdate={(project, updates) => {
+										updateProject(project, updates).then(() => {
+											// updateProject triggers fetchProjects; close panel after save
+											closePropertiesPanel();
+										});
+									}}
+									onDelete={(project) => { deleteProject(project); closePropertiesPanel(); }}
+									onAdd={async (spaceId, name, order, color, icon) => {
+										const created = await addProject(spaceId, name, order, color, icon);
+										if (created && created.id) {
+											// Open the panel with the created project so user can add other fields
+											openPropertiesPanel('project', created);
+										}
+									}}
+									on:saved={(e) => {
+										const name = e.detail?.project?.name || 'Project';
+										toastStore.show(`${name} saved`, 'success');
+									}}
+									on:created={(e) => {
+										const name = e.detail?.project?.name || 'Project';
+										toastStore.show(`${name} created`, 'success');
+									}}
 								/>
 							{:else if $propertiesPanelType === 'task'}
+								<!-- When opening the properties panel for a single task, pass only that task
+									 so the form renders a single editable block instead of one per task. -->
 								<TasksPropertiesForm
-									tasks={$tasks}
+									tasks={$propertiesPanelType === 'task' && $propertiesPanelEntity ? [($propertiesPanelEntity as Task)] : []}
 									onAdd={name => $selectedProjectId && addTask($selectedProjectId, name)}
 									onUpdate={updateTask}
 									onDelete={deleteTask}
@@ -754,6 +777,7 @@ registerCliHandler('spaces', spacesCliHandler);
 							{:else if $propertiesPanelType === 'taskItem'}
 								<TaskItemsPropertiesForm
 									item={($propertiesPanelType === 'taskItem' && $propertiesPanelEntity && 'task_id' in $propertiesPanelEntity) ? $propertiesPanelEntity : null}
+									onAdd={name => $selectedTaskId && addTaskItem($selectedTaskId, name)}
 									onUpdate={updateTaskItem}
 									onDelete={deleteTaskItem}
 								/>

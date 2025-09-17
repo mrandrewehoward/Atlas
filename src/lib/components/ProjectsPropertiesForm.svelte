@@ -1,12 +1,15 @@
 <script lang="ts">
 import Icon from '@iconify/svelte';
+import { createEventDispatcher, onMount, afterUpdate } from 'svelte';
 // import { fetchProjects } from '../stores/projects';
 import type { Project } from '../types';
 import { spaces } from '../stores/spaces';
 import { get } from 'svelte/store';
+const dispatch = createEventDispatcher();
 export let project: Project | null = null;
 export let onUpdate: ((project: Project, updates: Partial<Project>) => void) | null = null;
 export let onDelete: ((project: Project) => void) | null = null;
+export let onAdd: ((spaceId: string, name: string, order?: number, color?: string, icon?: string) => Promise<any> | any) | null = null;
 
 // Theme color palette (add or adjust as needed)
 const colorOptions = [
@@ -38,19 +41,46 @@ const iconOptions = [
 // Get the parent space name
 $: spaceName = project ? (get(spaces).find(s => s.id === project.space_id)?.name ?? project.space_id) : '';
 
-let edit = project ? { ...project } : null;
+let edit = project ? { ...project } : { name: '', color: '', icon: '', order: 1, priority: null };
 $: if (project) edit = { ...project };
+let nameInput: HTMLInputElement | null = null;
+
+onMount(() => {
+  if (nameInput) nameInput.focus();
+});
+
+afterUpdate(() => {
+  // Focus name input whenever the project prop changes or form is shown
+  if (nameInput) {
+    nameInput.focus();
+  }
+});
 
 function handleSave() {
   if (project && onUpdate) {
     // Only send changed fields
     const updates: Partial<Project> = {};
-  if (edit.name !== project.name) updates.name = edit.name;
-  if (edit.color !== project.color) updates.color = edit.color;
-  if (edit.icon !== project.icon) updates.icon = edit.icon;
-  if (edit.order !== project.order) updates.order = edit.order;
-  if (edit.priority !== project.priority) updates.priority = edit.priority;
+    if (edit.name !== project.name) updates.name = edit.name;
+    if (edit.color !== project.color) updates.color = edit.color;
+    if (edit.icon !== project.icon) updates.icon = edit.icon;
+    if (edit.order !== project.order) updates.order = edit.order;
+    if (edit.priority !== project.priority) updates.priority = edit.priority;
     if (Object.keys(updates).length > 0) onUpdate(project, updates);
+    // notify parent for toasts
+    dispatch('saved', { project: { ...project, ...updates } });
+    // Close panel after save (behavior requested)
+    dispatch('close');
+  }
+}
+
+async function handleAdd() {
+  if (!onAdd) return;
+  // Use project.space_id if this form was opened for a project, otherwise fallback to first space
+  const spaceId = (project && (project as any).space_id) || (get(spaces)[0] && get(spaces)[0].id) || null;
+  if (!spaceId) return;
+  const created = await onAdd(spaceId, edit.name || '', edit.order, edit.color || '', edit.icon || '');
+  if (created) {
+    dispatch('created', { project: created });
   }
 }
 function handleDelete() {
@@ -59,8 +89,7 @@ function handleDelete() {
 function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     // Dispatch close event for parent to handle
-    const event = new CustomEvent('close', { bubbles: true });
-    dispatchEvent(event);
+    dispatch('close');
   }
 }
 </script>
@@ -69,7 +98,7 @@ function handleKeydown(e: KeyboardEvent) {
 <form class="flex flex-col gap-4 p-2" on:submit|preventDefault={handleSave} autocomplete="off">
   <div class="form-control">
     <label class="label text-xs font-semibold" for="project-name">Name</label>
-    <input id="project-name" class="input input-sm border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1" type="text" bind:value={edit.name} required />
+    <input bind:this={nameInput} id="project-name" class="input input-sm border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1" type="text" bind:value={edit.name} required />
   </div>
   <div class="form-control">
     <fieldset>
@@ -137,7 +166,13 @@ function handleKeydown(e: KeyboardEvent) {
       <Icon icon="material-symbols-light:save-outline" width="18" height="18" />
       <span class="hidden sm:inline">Save</span>
     </button>
-    <button class="btn btn-ghost btn-sm flex items-center gap-1" type="button" aria-label="Cancel" on:click={() => dispatchEvent(new CustomEvent('close', { bubbles: true }))}>
+    {#if !project}
+      <button class="btn btn-success btn-sm flex items-center gap-1" type="button" aria-label="Add" on:click={handleAdd}>
+        <Icon icon="material-symbols-light:add" width="18" height="18" />
+        <span class="hidden sm:inline">Add</span>
+      </button>
+    {/if}
+    <button class="btn btn-ghost btn-sm flex items-center gap-1" type="button" aria-label="Cancel" on:click={() => dispatch('close')}>
       <Icon icon="material-symbols-light:close" width="18" height="18" />
       <span class="hidden sm:inline">Cancel</span>
     </button>

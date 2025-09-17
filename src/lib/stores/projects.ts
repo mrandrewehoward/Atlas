@@ -39,14 +39,18 @@ export async function fetchProjects(spaceId: string) {
 }
 
 export async function addProject(spaceId: string, name: string, order?: number, color?: string, icon?: string) {
-  if (!spaceId || !name.trim()) return;
-  const { error } = await supabase
+  if (!spaceId || !name.trim()) return null;
+  const { data, error } = await supabase
     .from('projects')
-    .insert([{ space_id: spaceId, name: name.trim(), order, color, icon }]);
+    .insert([{ space_id: spaceId, name: name.trim(), order, color, icon }])
+    .select('*');
   if (!error) {
+    // refresh list and return the created project (first row)
     fetchProjects(spaceId);
+    return Array.isArray(data) && data.length > 0 ? data[0] : null;
   } else {
     projectsError.set(error.message);
+    return null;
   }
 }
 

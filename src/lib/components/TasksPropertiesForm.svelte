@@ -26,6 +26,8 @@ const iconOptions = [
 
 let newTaskName = '';
 let localEdit: Record<string, any> = {};
+let showQuickAdd = false;
+let quickAddName = '';
 
 $: {
   for (const task of tasks) {
@@ -147,22 +149,39 @@ function handleAdd() {
       </div>
     </div>
   {/each}
-  <div class="form-control mt-4">
-    <label class="label text-xs font-semibold" for="new-task-name">Add New Task</label>
-    <div class="flex gap-2">
-      <input
-        id="new-task-name"
-        class="input input-sm flex-1 border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1"
-        type="text"
-        bind:value={newTaskName}
-        placeholder="Add new task..."
-        aria-label="Add new task"
-        on:keydown={(e) => { if (e.key === 'Enter') handleAdd(); }}
-      />
-      <button class="btn btn-xs btn-primary flex items-center gap-1" type="button" aria-label="Add task" on:click={handleAdd}>
-        <Icon icon="material-symbols-light:add" width="16" height="16" />
-        <span class="hidden sm:inline">Add</span>
-      </button>
+
+  {#if tasks.length > 0}
+    <!-- Compact quick-add when editing a task (small button that reveals an inline input) -->
+    <div class="mt-2">
+      {#if !showQuickAdd}
+        <button class="btn btn-xs btn-outline" type="button" on:click={() => { showQuickAdd = true; setTimeout(() => { const el = document.getElementById('quick-add-task'); if (el) (el as HTMLInputElement).focus(); }, 0); }} aria-label="Add task">+ Add task</button>
+      {:else}
+        <div class="flex gap-2 items-center">
+          <input id="quick-add-task" class="input input-xs flex-1" type="text" bind:value={quickAddName} placeholder="New task name" on:keydown={(e) => { if (e.key === 'Enter') { if (quickAddName.trim()) { onAdd && onAdd(quickAddName.trim()); quickAddName = ''; showQuickAdd = false; } } if (e.key === 'Escape') { showQuickAdd = false; quickAddName = ''; } }} />
+          <button class="btn btn-xs btn-primary" type="button" on:click={() => { if (quickAddName.trim()) { onAdd && onAdd(quickAddName.trim()); quickAddName = ''; showQuickAdd = false; } }} aria-label="Confirm add">Add</button>
+          <button class="btn btn-xs btn-ghost" type="button" on:click={() => { showQuickAdd = false; quickAddName = ''; }} aria-label="Cancel add">Cancel</button>
+        </div>
+      {/if}
     </div>
-  </div>
+  {/if}
+  {#if tasks.length === 0}
+    <div class="form-control mt-4">
+      <label class="label text-xs font-semibold" for="new-task-name">Add New Task</label>
+      <div class="flex gap-2">
+        <input
+          id="new-task-name"
+          class="input input-sm flex-1 border border-base-300 bg-base-100 text-base-content font-mono px-2 py-1"
+          type="text"
+          bind:value={newTaskName}
+          placeholder="Add new task..."
+          aria-label="Add new task"
+          on:keydown={(e) => { if (e.key === 'Enter') handleAdd(); }}
+        />
+        <button class="btn btn-xs btn-primary flex items-center gap-1" type="button" aria-label="Add task" on:click={handleAdd}>
+          <Icon icon="material-symbols-light:add" width="16" height="16" />
+          <span class="hidden sm:inline">Add</span>
+        </button>
+      </div>
+    </div>
+  {/if}
 </form>
